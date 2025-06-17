@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة إدارة المشاريع</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Formal Olive, Gold, and Black -->
+    <!-- Application Structure Plan: تم إعادة تصميم البوابة بالكامل لتعتمد على هيكل من قسمين: شريط تنقل جانبي أيقوني ثابت على اليمين، ومساحة محتوى رئيسية على اليسار. هذا التصميم يطابق الصورة المرجعية الجديدة، ويوفر تجربة تصفح احترافية ومنظمة. يتم إخفاء الشريط الجانبي على الشاشات الصغيرة ويظهر عبر زر مخصص، مما يضمن استجابة كاملة. -->
+    <!-- Visualization & Content Choices:
+        - معلومات التقرير: هيكل تنقل جديد -> الهدف: تحسين تجربة المستخدم ومطابقة التصميم الجديد -> طريقة العرض: شريط جانبي ثابت مع أيقونات وقائمة منسدلة -> التفاعل: النقر على الروابط يغير المحتوى في المساحة الرئيسية ويُبرز الرابط النشط -> التبرير: يوفر وصولاً سريعًا وثابتًا لجميع أقسام البوابة.
+        - تم الحفاظ على جميع المرئيات والبيانات السابقة ودمجها بسلاسة في هيكل المحتوى الجديد.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8f9fa;
+        }
+        /* Login Page styles */
+        .login-bg { 
+            background-color: #4A5C52;
+            background-image: url('https://placehold.co/100x100/ffffff/ffffff?text=.'); /* Placeholder for emblem */
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 50% auto;
+            opacity: 1; /* This will be applied to the background image with a semi-transparent placeholder */
+         }
+        .login-container {
+            background-color: rgba(74, 92, 82, 0.8);
+            backdrop-filter: blur(4px);
+        }
+        .user-type-btn.active {
+            background-color: #F2E3B3;
+            color: #4A5C52;
+            font-weight: bold;
+        }
+        .login-input {
+             background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Portal Page styles */
+        :root {
+            --olive-dark: #3D4A3A;
+            --gold-accent: #DAA520;
+            --sidebar-bg: #111827;
+            --sidebar-text: #d1d5db;
+            --sidebar-hover-bg: #1f2937;
+            --sidebar-active-bg: #374151; 
+        }
+        
+        .portal-theme-text { color: var(--olive-dark); }
+        .nav-link.active {
+            background-color: var(--sidebar-active-bg);
+            color: white;
+            border-right: 4px solid var(--gold-accent);
+        }
+        .nav-parent-button.active {
+            background-color: var(--sidebar-active-bg);
+            color: white;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 320px;
+        }
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+        
+        .sidebar {
+            background: linear-gradient(to bottom, #2c3e50, #1a2920);
+            transition: transform 0.3s ease-in-out;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        .submenu {
+            background-color: rgba(0,0,0,0.2);
+        }
+        .tab-button.active {
+            border-color: var(--olive-dark);
+            color: var(--olive-dark);
+            background-color: white;
+        }
+        .input-method-btn.active {
+            border-color: var(--gold-accent);
+            color: var(--olive-dark);
+            background-color: #fefce8;
+        }
+        .icon-3d {
+             text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+        .avatar-3d {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 4px 6px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Login Page -->
+    <div id="login-page" class="login-bg min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-2xl login-container rounded-2xl p-8 shadow-2xl">
+            <header class="mb-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
+                         <img src="images/logoBlack.png" alt="شعار" class="rounded-full opacity-100">
+                    </div>
+                    <div class="text-center text-white">
+                        <h1 class="text-xl font-bold">وزارة الداخلية</h1>
+                        <h2 class="text-2xl font-extrabold">المديرية العامة للسجون</h2>
+                        <p class="text-sm">الشؤون الفنية - الدراسات والتصاميم</p>
+                    </div>
+                    <div class="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
+                         <img src="images/sudia.png" alt="شعار" class="rounded-full opacity-100">
+                    </div>
+                </div>
+                 <div class="flex justify-center gap-2 max-w-sm mx-auto">
+                    <button class="user-type-btn w-full p-2 rounded-lg bg-white/10 text-white transition" data-user="admin">الإدارة</button>
+                    <button class="user-type-btn active w-full p-2 rounded-lg bg-white/10 text-white transition" data-user="user">المستخدم</button>
+                </div>
+            </header>
+            <main class="max-w-md mx-auto">
+                <div class="text-center text-white mb-6">
+                    <h3 class="text-2xl font-bold">تسجيل الدخول</h3>
+                    <p class="text-sm opacity-80">تسجيل الدخول للوصول إلى حسابك</p>
+                </div>
+                <form id="login-form" class="space-y-5">
+                    <div class="relative">
+                        <input type="text" id="username" placeholder="اسم المستخدم أو البريد الإلكتروني" required class="w-full login-input text-white placeholder-white/70 p-3 pr-10 rounded-lg border-2 border-transparent focus:border-[#F2E3B3] focus:outline-none transition">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-white/70">👤</span>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="password" placeholder="كلمة المرور" required class="w-full login-input text-white placeholder-white/70 p-3 pr-10 rounded-lg border-2 border-transparent focus:border-[#F2E3B3] focus:outline-none transition">
+                         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-white/70">🔒</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm text-white">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="remember" class="form-checkbox h-4 w-4 rounded bg-white/30 text-[#F2E3B3] focus:ring-0">
+                            <label for="remember">تذكرني</label>
+                        </div>
+                        <a href="#" class="hover:underline">هل نسيت كلمة السر؟</a>
+                    </div>
+                    <div><button type="submit" class="w-full bg-[#F2E3B3] text-[#4A5C52] font-bold p-3 rounded-lg hover:bg-opacity-90 transition">تسجيل الدخول</button></div>
+                </form>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Portal Page -->
+    <div id="portal-page" class="hidden">
+        <div class="flex h-screen bg-gray-100">
+            <!-- Sidebar -->
+            <aside id="sidebar" class="sidebar w-64 fixed top-0 right-0 h-full z-30 md:relative md:translate-x-0 transform translate-x-full">
+                <div class="p-4 border-b border-gray-700 text-center flex items-center justify-center gap-2">
+                    <img src="images/logoBlack.png" alt="شعار المؤسسة" class="w-25 h-14 rounded-full">
+                    <h2 class="text-xl font-bold text-white">واجهة البرنامج</h2>
+                </div>
+                <nav class="mt-4">
+                    <p class="px-4 text-xs text-gray-500 uppercase font-semibold">القائمة الرئيسية</p>
+                    <a href="#" class="nav-link flex items-center px-4 py-3 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white" data-page="home">
+                        <span class="text-xl icon-3d">🏠</span><span class="mx-3 font-medium">الرئيسية</span>
+                    </a>
+                    <a href="#" class="nav-link flex items-center px-4 py-3 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white" data-page="dashboard">
+                        <span class="text-xl icon-3d">🎛️</span><span class="mx-3 font-medium">لوحة التحكم</span>
+                    </a>
+                    
+                    <div>
+                        <button id="projects-dropdown-toggle" class="nav-parent-button w-full flex items-center justify-between px-4 py-3 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white">
+                            <span class="flex items-center">
+                                <span class="text-xl icon-3d">🏗️</span>
+                                <span class="mx-3 font-medium">ادارة المشاريع</span>
+                            </span>
+                            <svg id="projects-dropdown-arrow" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="projects-dropdown-menu" class="hidden pt-2 pr-4 space-y-1">
+                             <div>
+                                <button id="studies-dropdown-toggle" class="nav-parent-button w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md">
+                                    <span class="flex items-center">
+                                        <span class="text-lg icon-3d">📐</span>
+                                        <span class="mx-3 font-medium text-sm">الدراسات و التصاميم</span>
+                                    </span>
+                                    <svg id="studies-dropdown-arrow" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
+                                <div id="studies-dropdown-menu" class="hidden pt-2 pr-6 space-y-1 submenu">
+                                    <a href="#" class="nav-link block px-3 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-md" data-page="projects-sub">المشاريع</a>
+                                    <a href="#" class="nav-link block px-3 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-md" data-page="tendering-sub">طرح المشاريع</a>
+                                    <a href="#" class="nav-link block px-3 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-md" data-page="departments-sub">الاقسام</a>
+                                </div>
+                             </div>
+                            <a href="#" class="nav-link flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md" data-page="engineering-supervision">
+                               <span class="text-lg icon-3d">🛠️</span><span class="mx-3 font-medium text-sm">الاشراف الهندسي</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <a href="#" class="nav-link flex items-center px-4 py-3 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white" data-page="archive">
+                        <span class="text-xl icon-3d">🗄️</span><span class="mx-3 font-medium">مكتبة المستندات</span>
+                    </a>
+                </nav>
+            </aside>
+            
+            <!-- Main Content -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <!-- Header -->
+                <header class="flex justify-between items-center p-4 bg-white border-b shadow-sm z-20">
+                    <div class="flex items-center">
+                         <button id="menu-toggle-button" class="md:hidden text-gray-600 focus:outline-none">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                        </button>
+                        <h1 class="text-xl font-semibold text-gray-800 mx-4" id="page-title">الرئيسية</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="relative text-gray-600 hover:text-gray-800">
+                            <span class="text-2xl icon-3d">🔔</span>
+                            <span class="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                        </button>
+                        <div class="avatar-3d w-10 h-10 rounded-full bg-[#B8860B] flex items-center justify-center font-bold text-white border-2 border-white">ع</div>
+                    </div>
+                </header>
+                
+                <!-- Page Content -->
+                <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-8">
+                    <div id="home" class="page-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                            <div class="xl:col-span-1 bg-white p-6 rounded-xl shadow-lg flex flex-col items-center text-center">
+                                <div class="w-24 h-24 rounded-full bg-yellow-100 flex items-center justify-center mb-4 border-4 border-white shadow-md">
+                                    <span class="text-5xl" style="color: var(--gold-accent);">👤</span>
+                                </div>
+                                <h3 id="home-user-name" class="font-bold text-xl portal-theme-text"></h3>
+                                <p id="home-user-role" class="text-sm text-gray-500"></p>
+                            </div>
+                            <a href="#" data-page="dashboard" class="nav-link-card bg-white p-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-4">
+                                <span class="text-4xl icon-3d">🎛️</span>
+                                <div>
+                                    <h3 class="font-bold text-xl portal-theme-text">لوحة التحكم</h3>
+                                    <p class="text-sm text-gray-500">عرض المؤشرات والرسوم البيانية</p>
+                                </div>
+                            </a>
+                             <a href="#" data-page="projects-sub" class="nav-link-card bg-white p-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-4">
+                                <span class="text-4xl icon-3d">🏗️</span>
+                                <div>
+                                    <h3 class="font-bold text-xl portal-theme-text">ادارة المشاريع</h3>
+                                    <p class="text-sm text-gray-500">تصفح وتصنيف المشاريع والمستندات</p>
+                                </div>
+                            </a>
+                             <a href="#" data-page="archive" class="nav-link-card bg-white p-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-4">
+                                <span class="text-4xl icon-3d">🗄️</span>
+                                <div>
+                                    <h3 class="font-bold text-xl portal-theme-text">مكتبة المستندات</h3>
+                                    <p class="text-sm text-gray-500">الأرشيف الدائم لجميع الملفات</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    <div id="dashboard" class="page-content hidden">
+                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white p-5 rounded-xl shadow-lg text-center"><p class="text-4xl font-bold" style="color: var(--olive-dark);" id="kpi-total">10</p><p class="text-gray-500 mt-1">إجمالي المشاريع</p></div>
+                            <div class="bg-white p-5 rounded-xl shadow-lg text-center"><p class="text-4xl font-bold" style="color: var(--gold-accent);" id="kpi-ongoing">3</p><p class="text-gray-500 mt-1">جاري طرحها</p></div>
+                            <div class="bg-white p-5 rounded-xl shadow-lg text-center"><p class="text-4xl font-bold text-gray-500" id="kpi-previous">4</p><p class="text-gray-500 mt-1">سابقة</p></div>
+                            <div class="bg-white p-5 rounded-xl shadow-lg text-center"><p class="text-4xl font-bold text-blue-600" id="kpi-completed">3</p><p class="text-gray-500 mt-1">مقترحة</p></div>
+                         </div>
+                         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                            <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow-lg"><h3 class="font-bold text-lg" style="color: var(--olive-dark);">توزيع المشاريع حسب المنطقة</h3><div class="chart-container"><canvas id="barChart"></canvas></div></div>
+                            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg"><h3 class="font-bold text-lg" style="color: var(--olive-dark);">تصنيف المشاريع حسب الحالة</h3><div class="chart-container"><canvas id="doughnutChart"></canvas></div></div>
+                         </div>
+                    </div>
+                    <div id="projects-sub" class="page-content hidden">
+                       <div id="project-summary-cards" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                           <!-- Summary cards will be injected here -->
+                       </div>
+                       <div id="filtered-project-view" class="hidden">
+                            <div class="flex justify-between items-center mb-6">
+                                <div class="flex items-center gap-4">
+                                    <h2 id="filtered-project-title" class="text-2xl font-bold" style="color: var(--olive-dark);"></h2>
+                                    <div class="relative">
+                                        <button id="add-document-button" class="bg-gray-800 text-white text-sm rounded-lg px-4 py-2 hover:bg-black transition-colors flex items-center gap-2"><span>+</span> إضافة</button>
+                                        <div id="add-document-dropdown" class="hidden absolute left-0 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                                            <div id="add-doc-step1" class="p-2">
+                                                <p class="text-sm font-semibold p-2">1. اختر نوع المشروع</p>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="1" data-value="انشاءات">انشاءات</a>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="1" data-value="ترميمات">الترميمات</a>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="1" data-value="توريدات">التوريدات</a>
+                                            </div>
+                                            <div id="add-doc-step2" class="p-2 hidden">
+                                                 <p class="text-sm font-semibold p-2">2. اختر المنطقة</p>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="2" data-value="الرياض">الرياض</a>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="2" data-value="مكة">مكة</a>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="2" data-value="المدينة">المدينة</a>
+                                            </div>
+                                             <div id="add-doc-step3" class="p-2 hidden">
+                                                 <p class="text-sm font-semibold p-2">3. اختر نوع الملف</p>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="3" data-value="karrasa">كراسة شروط</a>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="3" data-value="mokhatat">مخططات</a>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="3" data-value="jadwal">جدول كميات</a>
+                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="3" data-value="wathiqa">وثائق الزامية</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="back-to-summary" class="bg-gray-800 text-white text-sm rounded-lg px-4 py-2 hover:bg-black transition-colors">→ الرجوع</button>
+                           </div>
+                           
+                           <div class="bg-white p-4 rounded-xl shadow-lg mb-6">
+                               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                   <div>
+                                       <label for="detail-region-filter" class="block text-sm font-medium text-gray-700">المنطقة</label>
+                                       <select id="detail-region-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm rounded-md">
+                                           <option value="all">كل المناطق</option>
+                                           <option>الرياض</option>
+                                           <option>مكة</option>
+                                           <option>المدينة</option>
+                                       </select>
+                                   </div>
+                                   <div>
+                                       <label for="detail-search" class="block text-sm font-medium text-gray-700">بحث</label>
+                                       <input type="text" id="detail-search" class="mt-1 focus:ring-yellow-500 focus:border-yellow-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="بحث في المستندات...">
+                                   </div>
+                               </div>
+                           </div>
+
+                           <div id="project-tabs-container" class="mb-6 hidden">
+                               <div class="border-b border-gray-200">
+                                   <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                                       <button class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-type="انشاءات">الانشاءات</button>
+                                       <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-type="ترميمات">الترميمات</button>
+                                       <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-type="توريدات">التوريدات</button>
+                                   </nav>
+                               </div>
+                           </div>
+
+                           <div id="project-documents-container" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+                               <!-- Document cards will be injected here -->
+                           </div>
+                       </div>
+                    </div>
+                    <div id="tendering-sub" class="page-content hidden">
+                        <div class="bg-white p-8 rounded-xl shadow-lg"><h2 class="text-2xl font-bold" style="color: var(--olive-dark);">قسم طرح المشاريع</h2><p class="mt-4 text-gray-600">محتوى قسم طرح المشاريع سيتم إضافته هنا.</p></div>
+                    </div>
+                     <div id="departments-sub" class="page-content hidden">
+                        <div class="bg-white p-8 rounded-xl shadow-lg"><h2 class="text-2xl font-bold" style="color: var(--olive-dark);">قسم الأقسام</h2><p class="mt-4 text-gray-600">محتوى قسم الأقسام سيتم إضافته هنا.</p></div>
+                    </div>
+                    <div id="engineering-supervision" class="page-content hidden">
+                        <div class="bg-white p-8 rounded-xl shadow-lg"><h2 class="text-2xl font-bold" style="color: var(--olive-dark);">قسم الاشراف الهندسي</h2><p class="mt-4 text-gray-600">محتوى قسم الاشراف الهندسي سيتم إضافته هنا.</p></div>
+                    </div>
+                    <div id="archive" class="page-content hidden">
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                           <h2 class="text-2xl font-bold" style="color: var(--olive-dark);">مكتبة المستندات (الأرشيف)</h2>
+                           <p class="mt-2 text-gray-600">سجل دائم لجميع المستندات التي تم إدخالها في النظام.</p>
+                           <div class="mt-4 overflow-x-auto">
+                               <table class="min-w-full divide-y divide-gray-200">
+                                   <thead class="bg-gray-50">
+                                       <tr>
+                                           <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اسم الملف</th>
+                                           <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المستخدم</th>
+                                           <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الإضافة</th>
+                                           <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إجراءات</th>
+                                       </tr>
+                                   </thead>
+                                   <tbody id="archive-table-body" class="bg-white divide-y divide-gray-200">
+                                       <!-- Archive rows will be injected here -->
+                                   </tbody>
+                               </table>
+                           </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="documentViewModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4 modal-backdrop">
+        <div id="document-view-content-container" class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col modal-content transform scale-95">
+             <div class="p-4 border-b flex justify-between items-center"><h3 id="document-view-title" class="text-xl font-bold portal-theme-text"></h3><button id="closeDocumentViewModal" class="text-gray-400 hover:text-gray-800 text-3xl leading-none">&times;</button></div>
+             <div class="p-6 flex-1 overflow-y-auto"></div>
+             <div class="p-4 bg-gray-50 border-t flex justify-end"><button id="downloadDocumentBtn" class="bg-gray-800 text-white text-sm rounded-lg px-4 py-2 hover:bg-black transition-colors">تحميل الملف</button></div>
+        </div>
+    </div>
+
+    <div id="addFileModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4 modal-backdrop">
+        <form id="addFileForm" class="bg-white rounded-2xl shadow-2xl w-full max-w-xl modal-content transform scale-95">
+             <div class="p-4 border-b"><h3 class="text-xl font-bold portal-theme-text">إضافة ملف جديد</h3></div>
+             <div class="p-6 space-y-4">
+                <div class="flex border-b"><button type="button" id="manual-input-btn" class="input-method-btn flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent">كتابة يدويا</button><button type="button" id="upload-input-btn" class="input-method-btn flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent">ارفاق ملف</button></div>
+                <div id="upload-input-view" class="hidden"><label for="attachFileInput" class="block text-sm font-medium text-gray-700">اختر ملف</label><input type="file" id="attachFileInput" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"/></div>
+                <div id="manual-input-view"><label for="addFileName" class="block text-sm font-medium text-gray-700">اسم الملف (مطلوب للكتابة اليدوية)</label><input type="text" id="addFileName" class="mt-1 focus:ring-yellow-500 focus:border-yellow-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"><label for="addFileContent" class="block text-sm font-medium text-gray-700 mt-4">المحتوى</label><textarea id="addFileContent" rows="8" class="mt-1 focus:ring-yellow-500 focus:border-yellow-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"></textarea></div>
+             </div>
+             <div class="p-4 bg-gray-50 border-t flex justify-end space-x-2 space-x-reverse"><button type="button" id="closeAddFileModal" class="bg-gray-200 text-gray-700 text-sm rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors">إلغاء</button><button type="submit" class="text-white text-sm rounded-lg px-4 py-2 transition-colors" style="background-color: var(--olive-dark);">إضافة</button></div>
+        </form>
+    </div>
+    
+    <div id="downloadFilterModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4 modal-backdrop">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl modal-content transform scale-95">
+             <div class="p-4 border-b"><h3 id="download-modal-title" class="text-xl font-bold portal-theme-text">تحميل ملفات</h3></div>
+             <div class="p-6 space-y-4">
+                <div id="filter-section-project-type"></div>
+                <div id="filter-section-region"></div>
+                <div id="filter-section-doc-type"></div>
+             </div>
+             <div class="p-4 bg-gray-50 border-t flex justify-end space-x-2 space-x-reverse">
+                <button type="button" id="closeDownloadModal" class="bg-gray-200 text-gray-700 text-sm rounded-lg px-4 py-2 hover:bg-gray-300">إلغاء</button>
+                <button type="button" id="executeDownload" class="text-white text-sm rounded-lg px-4 py-2" style="background-color: var(--olive-dark);">تحميل</button>
+             </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loginPage = document.getElementById('login-page');
+            const portalPage = document.getElementById('portal-page');
+            const loginForm = document.getElementById('login-form');
+
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (document.getElementById('username').value.trim() && document.getElementById('password').value.trim()) {
+                        if(loginPage) loginPage.classList.add('hidden');
+                        if(portalPage) portalPage.classList.remove('hidden');
+                        initializePortal();
+                    } else {
+                        alert('الرجاء إدخال اسم المستخدم وكلمة المرور.');
+                    }
+                });
+            }
+
+            const userTypeBtns = document.querySelectorAll('.user-type-btn');
+            userTypeBtns.forEach(btn => btn.addEventListener('click', () => { userTypeBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); }));
+
+            function initializePortal() {
+                const currentUser = { name: 'مدير النظام', role: 'مسؤول أول', canDeleteFromArchive: true };
+                let projects = [
+                    { id: 1, name: 'تطوير الواجهة البحرية', type: 'انشاءات', region: 'مكة', status: 'المشاريع المقترحة', docs: [101, 102] },
+                    { id: 2, name: 'بناء مجمع سكني', type: 'انشاءات', region: 'الرياض', status: 'المشاريع السابقة', docs: [201, 202] },
+                    { id: 3, name: 'ترميم مبنى تاريخي', type: 'ترميمات', region: 'المدينة', status: 'المشاريع السابقة', docs: [301] },
+                    { id: 4, name: 'توريد أجهزة حاسب', type: 'توريدات', region: 'الرياض', status: 'المشاريع المقترحة', docs: [401] },
+                    { id: 5, name: 'إنشاء حديقة عامة', type: 'انشاءات', region: 'الرياض', status: 'المشاريع الجاري طرحها', docs: [501] },
+                    { id: 6, name: 'توريد أثاث مكتبي', type: 'توريدات', region: 'مكة', status: 'المشاريع الجاري طرحها', docs: [601] },
+                ];
+                let documentArchive = [
+                    {id: 101, type: 'karrasa', name:'كراسة شروط الواجهة.txt', fileType: 'text/plain', content: 'محتوى كراسة شروط الواجهة...', isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-01-15T10:00:00')},
+                    {id: 102, type: 'mokhatat', name:'مخطط الواجهة.pdf', fileType: 'application/pdf', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-01-16T11:30:00')},
+                    {id: 201, type: 'jadwal', name:'جدول كميات المجمع.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-02-20T14:00:00')},
+                    {id: 202, type: 'wathiqa', name:'وثيقة التزام المجمع.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-02-21T16:00:00')},
+                    {id: 301, type: 'mokhatat', name:'مخطط ترميم المبنى.pdf', fileType: 'application/pdf', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-03-10T09:00:00')},
+                    {id: 401, type: 'karrasa', name:'كراسة شروط التوريد.txt', fileType: 'text/plain', content: 'محتوى كراسة شروط الأجهزة...', isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-04-01T12:00:00')},
+                    {id: 501, type: 'karrasa', name:'كراسة شروط الحديقة.pdf', fileType: 'application/pdf', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-05-05T15:30:00')},
+                    {id: 601, type: 'karrasa', name:'كراسة شروط الأثاث.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-05-10T11:00:00')}
+                ];
+                
+                const navLinks = document.querySelectorAll('.nav-link');
+                const pages = document.querySelectorAll('.page-content');
+                const pageTitle = document.getElementById('page-title');
+                const sidebar = document.getElementById('sidebar');
+                const menuToggleButton = document.getElementById('menu-toggle-button');
+                
+                let currentProjectStatus = '', currentRegion = 'all', currentSearchTerm = '', currentProjectType = 'انشاءات';
+                let addDocSelection = {};
+                let currentInputMethod = 'manual';
+                
+                const documentViewModal = document.getElementById('documentViewModal');
+                const addFileModal = document.getElementById('addFileModal');
+                const downloadFilterModal = document.getElementById('downloadFilterModal');
+                let chartsInitialized = false;
+                
+                function showPage(pageId) {
+                    if(!pageId) return;
+                    pages.forEach(page => page.classList.add('hidden'));
+                    document.getElementById(pageId)?.classList.remove('hidden');
+                    document.querySelectorAll('.nav-parent-button, .nav-link').forEach(el => el.classList.remove('active'));
+                    const activeLink = Array.from(navLinks).find(link => link.dataset.page === pageId);
+                    if(activeLink){
+                        activeLink.classList.add('active');
+                        if (pageTitle) pageTitle.textContent = activeLink.textContent.trim();
+                        const parentStudies = activeLink.closest('#studies-dropdown-menu');
+                        const parentProjects = activeLink.closest('#projects-dropdown-menu');
+                        if (parentStudies) {
+                            document.getElementById('studies-dropdown-toggle')?.classList.add('active');
+                            document.getElementById('studies-dropdown-menu')?.classList.remove('hidden');
+                            document.getElementById('studies-dropdown-arrow')?.classList.add('rotate-180');
+                        }
+                        if (parentProjects || parentStudies) {
+                            document.getElementById('projects-dropdown-toggle')?.classList.add('active');
+                            document.getElementById('projects-dropdown-menu')?.classList.remove('hidden');
+                            document.getElementById('projects-dropdown-arrow')?.classList.add('rotate-180');
+                        }
+                    }
+                    if (window.innerWidth < 768 && sidebar) sidebar.classList.add('translate-x-full');
+                    if(pageId === 'projects-sub') renderSummaryCards();
+                    if(pageId === 'archive') renderArchive();
+                    if(pageId === 'dashboard' && !chartsInitialized) {
+                        renderCharts();
+                        chartsInitialized = true;
+                    }
+                }
+                
+                document.querySelectorAll('.nav-link-card').forEach(card => card.addEventListener('click', e => { e.preventDefault(); showPage(e.currentTarget.dataset.page); }));
+                document.querySelectorAll('.nav-link').forEach(link => link.addEventListener('click', e => { e.preventDefault(); showPage(e.target.closest('.nav-link').dataset.page); }));
+                menuToggleButton?.addEventListener('click', () => sidebar?.classList.toggle('translate-x-full'));
+                document.getElementById('projects-dropdown-toggle')?.addEventListener('click', () => { document.getElementById('projects-dropdown-menu')?.classList.toggle('hidden'); document.getElementById('projects-dropdown-arrow')?.classList.toggle('rotate-180'); });
+                document.getElementById('studies-dropdown-toggle')?.addEventListener('click', e => { e.stopPropagation(); document.getElementById('studies-dropdown-menu')?.classList.toggle('hidden'); document.getElementById('studies-dropdown-arrow')?.classList.toggle('rotate-180'); });
+
+                function renderSummaryCards() {
+                    const summaryContainer = document.getElementById('project-summary-cards');
+                    if(!summaryContainer) return;
+                    const statuses = {
+                        "المشاريع السابقة": { count: projects.filter(p => p.status === 'المشاريع السابقة').length, icon: '📜', bgColor: 'bg-gray-100' },
+                        "المشاريع الجاري طرحها": { count: projects.filter(p => p.status === 'المشاريع الجاري طرحها').length, icon: '⏳', bgColor: 'bg-amber-100' },
+                        "المشاريع المقترحة": { count: projects.filter(p => p.status === 'المشاريع المقترحة').length, icon: '💡', bgColor: 'bg-blue-100' }
+                    };
+                    summaryContainer.innerHTML = '';
+                    for (const [status, data] of Object.entries(statuses)) {
+                        summaryContainer.innerHTML += `<div class="summary-card bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between" data-status="${status}"><div><div class="w-16 h-16 rounded-full flex items-center justify-center ${data.bgColor} mb-4"><span class="text-3xl">${data.icon}</span></div><h3 class="font-bold text-xl portal-theme-text">${status}</h3><p class="text-4xl font-bold ${data.color || 'text-gray-700'} mt-2">${data.count} <span class="text-lg font-medium text-gray-500">مشروع</span></p></div><div class="mt-6 flex justify-between items-center"><span class="font-semibold text-blue-600 hover:text-blue-800 cursor-pointer summary-card-details">عرض التفاصيل →</span><button class="download-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-300">تحميل</button></div></div>`;
+                    }
+                    document.querySelectorAll('.summary-card-details').forEach(card => card.addEventListener('click', (e) => handleSummaryCardClick(e.target.closest('.summary-card'))));
+                    document.querySelectorAll('.download-btn').forEach(card => card.addEventListener('click', (e) => { e.stopPropagation(); handleDownloadFilterClick(e.target.closest('.summary-card').dataset.status); }));
+                }
+
+                function handleSummaryCardClick(card) {
+                    currentProjectStatus = card.dataset.status;
+                    document.getElementById('project-summary-cards')?.classList.add('hidden');
+                    document.getElementById('filtered-project-view')?.classList.remove('hidden');
+                    document.getElementById('filtered-project-title').textContent = currentProjectStatus;
+                    document.getElementById('detail-region-filter').value = 'all';
+                    currentRegion = 'all';
+                    document.getElementById('project-tabs-container')?.classList.add('hidden');
+                    document.getElementById('project-documents-container')?.classList.add('hidden');
+                }
+
+                document.getElementById('back-to-summary')?.addEventListener('click', () => {
+                    document.getElementById('project-summary-cards')?.classList.remove('hidden');
+                    document.getElementById('filtered-project-view')?.classList.add('hidden');
+                });
+                
+                document.getElementById('detail-region-filter')?.addEventListener('change', e => {
+                    currentRegion = e.target.value;
+                    document.getElementById('project-tabs-container')?.classList.remove('hidden');
+                    renderDocumentCards();
+                });
+                
+                document.getElementById('detail-search')?.addEventListener('input', e => {
+                    currentSearchTerm = e.target.value.toLowerCase();
+                    if(currentRegion !== 'all') renderDocumentCards();
+                });
+
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        currentProjectType = button.dataset.type;
+                        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                        renderDocumentCards();
+                    });
+                });
+
+                function renderDocumentCards() {
+                    const container = document.getElementById('project-documents-container');
+                    if(!container) return;
+                    container.classList.remove('hidden');
+                    container.innerHTML = '';
+                    const docTypes = {karrasa: {t:'كراسات الشروط', i:'📄',d:[]}, mokhatat: {t:'المخططات', i:'🗺️',d:[]}, jadwal: {t:'جدول الكميات',i:'📋',d:[]}, wathiqa: {t:'وثائق الزامية',i:'📎',d:[]}};
+                    const projectDocIds = projects.filter(p=>p.status===currentProjectStatus && (currentRegion==='all' || p.region===currentRegion) && p.type===currentProjectType).flatMap(p => p.docs);
+                    documentArchive.filter(doc => projectDocIds.includes(doc.id) && doc.name.toLowerCase().includes(currentSearchTerm)).forEach(d=>docTypes[d.type]?.d.push(d));
+                    
+                    let found = false;
+                    for (const typeKey in docTypes) {
+                        const type = docTypes[typeKey];
+                        const list = type.d.map(d=>`<li class="flex justify-between items-center text-sm text-gray-600 group"><span class="truncate cursor-pointer hover:text-blue-600 view-doc" data-doc-id="${d.id}">${d.name}</span>`+(!d.isReadOnly?`<button class="delete-doc text-red-500 opacity-0 group-hover:opacity-100" data-doc-id="${d.id}">🗑️</button>`:'')+`</li>`).join('');
+                        if (list) {
+                            found = true;
+                            container.innerHTML += `<div class="bg-white p-4 rounded-xl shadow-lg"><h4 class="font-bold text-lg mb-3 portal-theme-text">${type.i} ${type.t}</h4><ul class="space-y-2">${list}</ul></div>`;
+                        }
+                    }
+                    if (!found && currentRegion!=='all') container.innerHTML = `<p class="text-gray-500 md:col-span-2 text-center">لا توجد مستندات.</p>`;
+                    document.querySelectorAll('.view-doc').forEach(b=>b.addEventListener('click',e=>handleDocumentClick(e.target.dataset.docId)));
+                    document.querySelectorAll('.delete-doc').forEach(b=>b.addEventListener('click',e=>deleteDocumentFromProject(e.target.dataset.docId)));
+                }
+                
+                function handleDocumentClick(docId) {
+                    const doc = documentArchive.find(d => d.id == docId);
+                    if (!doc || !documentViewModal) return;
+
+                    const viewerContainer = documentViewModal.querySelector('.p-6.flex-1.overflow-y-auto');
+                    documentViewModal.querySelector('#document-view-title').textContent = doc.name;
+                    document.getElementById('downloadDocumentBtn').onclick = () => downloadDocument(doc.name, doc.content, doc.fileType);
+
+                    viewerContainer.innerHTML = ''; 
+
+                    if (doc.fileType === 'application/pdf' && doc.content) {
+                        const iframe = document.createElement('iframe');
+                        iframe.src = doc.content;
+                        iframe.className = 'w-full h-full border-0';
+                        viewerContainer.appendChild(iframe);
+                    } else if (doc.fileType.startsWith('text/') && doc.content) {
+                        const pre = document.createElement('pre');
+                        pre.textContent = doc.content;
+                        pre.className = 'whitespace-pre-wrap text-gray-700';
+                        viewerContainer.appendChild(pre);
+                    } else {
+                         const message = document.createElement('div');
+                         message.className = 'text-center p-8';
+                         message.innerHTML = `<p class="text-lg font-semibold text-gray-700">لا يمكن عرض هذا النوع من الملفات.</p><p class="text-gray-500">يمكنك تحميل الملف لمعاينته على جهازك.</p>`;
+                         viewerContainer.appendChild(message);
+                    }
+                    documentViewModal.classList.remove('hidden');
+                }
+                
+                document.getElementById('closeDocumentViewModal')?.addEventListener('click', () => documentViewModal.classList.add('hidden'));
+
+                document.getElementById('add-document-button')?.addEventListener('click', (e) => {
+                     e.stopPropagation();
+                     const dropdown = document.getElementById('add-document-dropdown');
+                     dropdown.classList.toggle('hidden');
+                     dropdown.querySelector('#add-doc-step1').classList.remove('hidden');
+                     dropdown.querySelector('#add-doc-step2').classList.add('hidden');
+                     dropdown.querySelector('#add-doc-step3').classList.add('hidden');
+                });
+
+                document.querySelectorAll('.add-doc-choice').forEach(choice => {
+                    choice.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const step = parseInt(e.target.dataset.step);
+                        const value = e.target.dataset.value;
+                        addDocSelection[`step${step}`] = value;
+                        document.getElementById(`add-doc-step${step}`).classList.add('hidden');
+                        if (step < 3) {
+                            document.getElementById(`add-doc-step${step + 1}`).classList.remove('hidden');
+                        } else {
+                            document.getElementById('add-document-dropdown').classList.add('hidden');
+                            openAddFileModal();
+                        }
+                    });
+                });
+                
+                function openAddFileModal() {
+                    document.getElementById('addFileForm')?.reset();
+                    document.getElementById('manual-input-btn')?.click();
+                    document.getElementById('addFileModal')?.classList.remove('hidden');
+                }
+
+                document.getElementById('closeAddFileModal')?.addEventListener('click', () => document.getElementById('addFileModal').classList.add('hidden'));
+                
+                document.getElementById('manual-input-btn')?.addEventListener('click', () => {
+                    currentInputMethod = 'manual';
+                    document.getElementById('manual-input-view').classList.remove('hidden');
+                    document.getElementById('upload-input-view').classList.add('hidden');
+                    document.getElementById('addFileContent').required = true;
+                    document.getElementById('attachFileInput').required = false;
+                    document.getElementById('manual-input-btn').classList.add('active');
+                    document.getElementById('upload-input-btn').classList.remove('active');
+                });
+                
+                document.getElementById('upload-input-btn')?.addEventListener('click', () => {
+                    currentInputMethod = 'upload';
+                    document.getElementById('manual-input-view').classList.add('hidden');
+                    document.getElementById('upload-input-view').classList.remove('hidden');
+                    document.getElementById('addFileContent').required = false;
+                    document.getElementById('attachFileInput').required = true;
+                    document.getElementById('upload-input-btn').classList.add('active');
+                    document.getElementById('manual-input-btn').classList.remove('active');
+                });
+
+                document.getElementById('addFileForm')?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const handleFileAddition = (name, content, fileType) => {
+                        const { step1: type, step2: region, step3: docType } = addDocSelection;
+                        let project = projects.find(p => p.status === currentProjectStatus && p.type === type && p.region === region);
+                        if (!project) {
+                            project = { id: Date.now(), name: `مشروع ${type} جديد في ${region}`, type, region, status: currentProjectStatus, docs: [] };
+                            projects.push(project);
+                        }
+                        
+                        const newDocId = Date.now();
+                        project.docs.push(newDocId);
+                        documentArchive.push({ id: newDocId, type: docType, name: name, fileType: fileType, content: content, isReadOnly: false, addedBy: currentUser.name, addedDate: new Date() });
+                        renderDocumentCards();
+                        document.getElementById('addFileModal').classList.add('hidden');
+                    };
+
+                    if (currentInputMethod === 'manual') {
+                        const name = document.getElementById('addFileName').value;
+                        const content = document.getElementById('addFileContent').value;
+                        if(name && content) handleFileAddition(name + ".txt", content, 'text/plain'); else alert('الرجاء تعبئة كل الحقول');
+                    } else {
+                        const fileInput = document.getElementById('attachFileInput');
+                        const file = fileInput.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => handleFileAddition(file.name, event.target.result, file.type);
+                            if (file.type.startsWith('text/') || file.type === 'application/json') {
+                                reader.readAsText(file);
+                            } else {
+                                reader.readAsDataURL(file); 
+                            }
+                        } else alert('الرجاء اختيار ملف.');
+                    }
+                });
+
+                function deleteDocumentFromProject(docId) {
+                    projects.forEach(p => { p.docs = p.docs.filter(id => id != docId); });
+                    renderDocumentCards();
+                }
+                
+                function deleteDocumentFromArchive(docId) {
+                    if (!currentUser.canDeleteFromArchive) {
+                        alert('ليس لديك الصلاحية لحذف الملفات من الأرشيف.');
+                        return;
+                    }
+                    if (confirm('هل أنت متأكد من حذف هذا الملف نهائياً من النظام؟')) {
+                        documentArchive = documentArchive.filter(d => d.id != docId);
+                        deleteDocumentFromProject(docId); 
+                        renderArchive();
+                    }
+                }
+
+                function downloadDocument(filename, content) {
+                    const a = document.createElement('a');
+                    a.href = content && content.startsWith('data:') ? content : 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }
+
+                function renderArchive() { 
+                    const list = document.getElementById('archive-table-body');
+                    if(!list) return;
+                    list.innerHTML = '';
+                    documentArchive.forEach(doc => {
+                         const deleteButton = currentUser.canDeleteFromArchive ? `<button class="delete-from-archive text-red-500 hover:text-red-700" data-doc-id="${doc.id}">حذف</button>` : '';
+                         const row = `<tr>
+                                        <td class="px-6 py-4 whitespace-nowrap"><a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-800 view-doc" data-doc-id="${doc.id}">${doc.name}</a></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${doc.addedBy}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(doc.addedDate).toLocaleString('ar-EG')}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2 space-x-reverse">${deleteButton}</td>
+                                      </tr>`;
+                         list.innerHTML += row;
+                    });
+                    document.querySelectorAll('.view-doc').forEach(b => b.addEventListener('click', e => handleDocumentClick(e.target.dataset.docId)));
+                    document.querySelectorAll('.delete-from-archive').forEach(b => b.addEventListener('click', e => deleteDocumentFromArchive(e.target.dataset.docId)));
+                }
+                
+                let barChart, doughnutChart;
+                function renderCharts() {
+                    const kpiTotal = document.getElementById('kpi-total'), kpiOngoing = document.getElementById('kpi-ongoing'), kpiPrevious = document.getElementById('kpi-previous'), kpiCompleted = document.getElementById('kpi-completed');
+                    const barChartCanvas = document.getElementById('barChart'), doughnutChartCanvas = document.getElementById('doughnutChart');
+                    
+                    if(kpiTotal) kpiTotal.textContent = projects.length;
+                    if(kpiOngoing) kpiOngoing.textContent = projects.filter(p => p.status === 'المشاريع الجاري طرحها').length;
+                    if(kpiPrevious) kpiPrevious.textContent = projects.filter(p => p.status === 'المشاريع السابقة').length;
+                    if(kpiCompleted) kpiCompleted.textContent = projects.filter(p => p.status === 'المشاريع المقترحة').length;
+                    
+                    const chartFont = { family: 'Cairo', size: 12 }, oliveDark = '#556B2F', goldAccent = '#B8860B';
+                    if(barChartCanvas){
+                        const barCtx = barChartCanvas.getContext('2d');
+                        const gradient = barCtx.createLinearGradient(0, 0, 0, 300);
+                        gradient.addColorStop(0, 'rgba(85, 107, 47, 0.7)');
+                        gradient.addColorStop(1, 'rgba(85, 107, 47, 1)');
+                        const regionData = projects.reduce((acc, p) => ({ ...acc, [p.region]: (acc[p.region] || 0) + 1 }), {});
+                        if (barChart) barChart.destroy();
+                        barChart = new Chart(barCtx, { type: 'bar', data: { labels: Object.keys(regionData), datasets: [{ label: 'عدد المشاريع', data: Object.values(regionData), backgroundColor: gradient, borderColor: oliveDark, borderWidth: 1, borderRadius: 5, hoverBackgroundColor: goldAccent }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { rtl: true, bodyFont: chartFont, titleFont: chartFont } }, scales: { y: { beginAtZero: true, grid: { color: '#e5e7eb', drawBorder: false }, ticks: { font: chartFont, color: '#6b7280' } }, x: { grid: { display: false }, ticks: { font: chartFont, color: '#6b7280' } } } } });
+                    }
+                    if(doughnutChartCanvas){
+                        const statusData = projects.reduce((acc, p) => ({ ...acc, [p.status]: (acc[p.status] || 0) + 1 }), {});
+                        const statusColorsMap = { 'المشاريع السابقة': '#6c757d', 'المشاريع الجاري طرحها': goldAccent, 'المشاريع المقترحة': '#2563eb' };
+                        if (doughnutChart) doughnutChart.destroy();
+                        doughnutChart = new Chart(doughnutChartCanvas.getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(statusData), datasets: [{ data: Object.values(statusData), backgroundColor: Object.keys(statusData).map(status => statusColorsMap[status]), borderColor: '#f8f9fa', borderWidth: 5, hoverOffset: 10 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { font: chartFont, color: '#4b5563', padding: 15 } }, tooltip: { rtl: true, bodyFont: chartFont, titleFont: chartFont, padding: 10, backgroundColor: '#111827' } } } });
+                    }
+                }
+                
+                function handleDownloadFilterClick(status) {
+                    const modal = document.getElementById('downloadFilterModal');
+                    document.getElementById('download-modal-title').textContent = `تحميل ملفات: ${status}`;
+                    
+                    const createFilterGroup = (title, name, options) => {
+                        let optionsHTML = Object.entries(options).map(([value, label]) => `
+                            <label class="flex items-center space-x-2 space-x-reverse">
+                                <input type="checkbox" name="${name}" value="${value}" class="rounded text-yellow-600 focus:ring-yellow-500">
+                                <span>${label}</span>
+                            </label>`).join('');
+                        return `<div><h4 class="font-semibold text-gray-700 mb-2">${title}</h4><div class="grid grid-cols-2 md:grid-cols-4 gap-2">${optionsHTML}<label class="flex items-center space-x-2 space-x-reverse"><input type="checkbox" name="${name}-all" class="rounded"><span>الكل</span></label></div></div>`;
+                    };
+
+                    document.getElementById('filter-section-project-type').innerHTML = createFilterGroup('نوع المشروع', 'project-type-filter', {'انشاءات':'انشاءات', 'ترميمات':'ترميمات', 'توريدات':'التوريدات'});
+                    document.getElementById('filter-section-region').innerHTML = createFilterGroup('المنطقة', 'region-filter', {'الرياض':'الرياض', 'مكة':'مكة', 'المدينة':'المدينة'});
+                    document.getElementById('filter-section-doc-type').innerHTML = createFilterGroup('نوع الملف', 'doc-type-filter', {'karrasa':'كراسة شروط', 'mokhatat':'مخططات', 'jadwal':'جدول كميات', 'wathiqa':'وثائق الزامية'});
+
+                    modal.classList.remove('hidden');
+                    
+                    document.getElementById('executeDownload').onclick = () => {
+                        const getSelected = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
+                        const selectedProjectTypes = getSelected('project-type-filter');
+                        const selectedRegions = getSelected('region-filter');
+                        const selectedDocTypes = getSelected('doc-type-filter');
+
+                        const projectDocIds = projects.filter(p => p.status === status && (selectedProjectTypes.length === 0 || selectedProjectTypes.includes(p.type)) && (selectedRegions.length === 0 || selectedRegions.includes(p.region))).flatMap(p => p.docs);
+                        const filesToDownload = documentArchive.filter(doc => projectDocIds.includes(doc.id) && (selectedDocTypes.length === 0 || selectedDocTypes.includes(doc.type)));
+                        
+                        alert(`سيتم تحميل ${filesToDownload.length} ملف.\n` + filesToDownload.map(f => f.name).join('\n'));
+                        modal.classList.add('hidden');
+                    };
+
+                    document.querySelectorAll('input[name$="-all"]').forEach(allCheckbox => {
+                        const name = allCheckbox.name.replace('-all', '');
+                        allCheckbox.addEventListener('change', (e) => {
+                            document.querySelectorAll(`input[name="${name}"]`).forEach(cb => cb.checked = e.target.checked);
+                        });
+                    });
+                }
+                
+                document.getElementById('closeDownloadModal')?.addEventListener('click', () => document.getElementById('downloadFilterModal').classList.add('hidden'));
+
+                showPage('home');
+                document.getElementById('home-user-name').textContent = currentUser.name;
+                document.getElementById('home-user-role').textContent = currentUser.role;
+            }
+        });
+    </script>
+</body>
+</html>

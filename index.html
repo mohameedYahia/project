@@ -3,822 +3,1092 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بوابة إدارة المشاريع</title>
+    <title>شاشة استخراج التقارير الشاملة</title>
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Formal Olive, Gold, and Black -->
-    <!-- Application Structure Plan: تم إعادة تصميم البوابة بالكامل لتعتمد على هيكل من قسمين: شريط تنقل جانبي أيقوني ثابت على اليمين، ومساحة محتوى رئيسية على اليسار. هذا التصميم يطابق الصورة المرجعية الجديدة، ويوفر تجربة تصفح احترافية ومنظمة. يتم إخفاء الشريط الجانبي على الشاشات الصغيرة ويظهر عبر زر مخصص، مما يضمن استجابة كاملة. -->
-    <!-- Visualization & Content Choices:
-        - معلومات التقرير: هيكل تنقل جديد -> الهدف: تحسين تجربة المستخدم ومطابقة التصميم الجديد -> طريقة العرض: شريط جانبي ثابت مع أيقونات وقائمة منسدلة -> التفاعل: النقر على الروابط يغير المحتوى في المساحة الرئيسية ويُبرز الرابط النشط -> التبرير: يوفر وصولاً سريعًا وثابتًا لجميع أقسام البوابة.
-        - تم الحفاظ على جميع المرئيات والبيانات السابقة ودمجها بسلاسة في هيكل المحتوى الجديد.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- jsPDF and html2canvas for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Amiri font for Arabic support -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Cairo', sans-serif;
-            background-color: #f8f9fa;
+            font-family: 'Amiri', serif;
+            background-color: #f7fafc;
         }
-        /* Login Page styles */
-        .login-bg { 
-            background-color: #4A5C52;
-            background-image: url('https://placehold.co/100x100/ffffff/ffffff?text=.'); /* Placeholder for emblem */
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: 50% auto;
-            opacity: 1; /* This will be applied to the background image with a semi-transparent placeholder */
-         }
-        .login-container {
-            background-color: rgba(74, 92, 82, 0.8);
-            backdrop-filter: blur(4px);
+        .report-container {
+            font-family: 'Amiri', serif;
         }
-        .user-type-btn.active {
-            background-color: #F2E3B3;
-            color: #4A5C52;
+        .report-table th, .report-table td {
+            border: 1px solid #e2e8f0;
+            padding: 6px;
+            font-size: 0.8rem;
+            text-align: right;
+        }
+        .report-table th {
+            background-color: #f8fafc;
             font-weight: bold;
         }
-        .login-input {
-             background-color: rgba(255, 255, 255, 0.1);
+        
+        /* Image Watermark Style */
+        .report-background {
+            position: relative;
+            z-index: 1;
+            overflow: hidden; /* To contain the pseudo-element */
         }
 
-        /* Portal Page styles */
-        :root {
-            --olive-dark: #3D4A3A;
-            --gold-accent: #DAA520;
-            --sidebar-bg: #111827;
-            --sidebar-text: #d1d5db;
-            --sidebar-hover-bg: #1f2937;
-            --sidebar-active-bg: #374151; 
+        .report-background::before {
+            content: '';
+            background-image: url('images/باك.png'); /* Placeholder Image URL */
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 80%;
+            height: 80%;
+            transform: translate(-50%, -50%);
+            opacity: 0.06; /* Low opacity for watermark effect */
+            z-index: -1;
+            pointer-events: none;
         }
         
-        .portal-theme-text { color: var(--olive-dark); }
-        .nav-link.active {
-            background-color: var(--sidebar-active-bg);
-            color: white;
-            border-right: 4px solid var(--gold-accent);
+        .chart-container-background {
+            background-color: #eff6ff; /* blue-50 from Tailwind */
         }
-        .nav-parent-button.active {
-            background-color: var(--sidebar-active-bg);
-            color: white;
-        }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            height: 320px;
-        }
-        .modal-backdrop { transition: opacity 0.3s ease; }
-        .modal-content { transition: transform 0.3s ease; }
-        
-        .sidebar {
-            background: linear-gradient(to bottom, #2c3e50, #1a2920);
-            transition: transform 0.3s ease-in-out;
-        }
-        .rotate-180 {
-            transform: rotate(180deg);
-        }
-        .submenu {
-            background-color: rgba(0,0,0,0.2);
-        }
-        .tab-button.active {
-            border-color: var(--olive-dark);
-            color: var(--olive-dark);
-            background-color: white;
-        }
-        .input-method-btn.active {
-            border-color: var(--gold-accent);
-            color: var(--olive-dark);
-            background-color: #fefce8;
-        }
-        .icon-3d {
-             text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-        }
-        .avatar-3d {
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 4px 6px rgba(0,0,0,0.2);
+
+        /* Custom styles for printing */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #report-output, #report-output * {
+                visibility: visible;
+            }
+            #report-output {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+            .report-background::before {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     </style>
 </head>
-<body class="text-gray-800">
-
-    <!-- Login Page -->
-    <div id="login-page" class="login-bg min-h-screen flex flex-col items-center justify-center p-4">
-        <div class="w-full max-w-2xl login-container rounded-2xl p-8 shadow-2xl">
-            <header class="mb-6">
-                <div class="flex justify-between items-center mb-6">
-                    <div class="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
-                         <img src="images/logoBlack.png" alt="شعار" class="rounded-full opacity-100">
-                    </div>
-                    <div class="text-center text-white">
-                        <h1 class="text-xl font-bold">وزارة الداخلية</h1>
-                        <h2 class="text-2xl font-extrabold">المديرية العامة للسجون</h2>
-                        <p class="text-sm">الشؤون الفنية - الدراسات والتصاميم</p>
-                    </div>
-                    <div class="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
-                         <img src="images/sudia.png" alt="شعار" class="rounded-full opacity-100">
-                    </div>
-                </div>
-                 <div class="flex justify-center gap-2 max-w-sm mx-auto">
-                    <button class="user-type-btn w-full p-2 rounded-lg bg-white/10 text-white transition" data-user="admin">الإدارة</button>
-                    <button class="user-type-btn active w-full p-2 rounded-lg bg-white/10 text-white transition" data-user="user">المستخدم</button>
-                </div>
-            </header>
-            <main class="max-w-md mx-auto">
-                <div class="text-center text-white mb-6">
-                    <h3 class="text-2xl font-bold">تسجيل الدخول</h3>
-                    <p class="text-sm opacity-80">تسجيل الدخول للوصول إلى حسابك</p>
-                </div>
-                <form id="login-form" class="space-y-5">
-                    <div class="relative">
-                        <input type="text" id="username" placeholder="اسم المستخدم أو البريد الإلكتروني" required class="w-full login-input text-white placeholder-white/70 p-3 pr-10 rounded-lg border-2 border-transparent focus:border-[#F2E3B3] focus:outline-none transition">
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-white/70">👤</span>
-                    </div>
-                    <div class="relative">
-                        <input type="password" id="password" placeholder="كلمة المرور" required class="w-full login-input text-white placeholder-white/70 p-3 pr-10 rounded-lg border-2 border-transparent focus:border-[#F2E3B3] focus:outline-none transition">
-                         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-white/70">🔒</span>
-                    </div>
-                    <div class="flex justify-between items-center text-sm text-white">
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="remember" class="form-checkbox h-4 w-4 rounded bg-white/30 text-[#F2E3B3] focus:ring-0">
-                            <label for="remember">تذكرني</label>
-                        </div>
-                        <a href="#" class="hover:underline">هل نسيت كلمة السر؟</a>
-                    </div>
-                    <div><button type="submit" class="w-full bg-[#F2E3B3] text-[#4A5C52] font-bold p-3 rounded-lg hover:bg-opacity-90 transition">تسجيل الدخول</button></div>
-                </form>
-            </main>
+<body class="bg-gray-100 p-4 sm:p-6 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6 no-print">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">نظام استخراج التقارير المالية الشاملة</h1>
+            <img src="images/1.png" alt="Logo" class="h-20">
         </div>
-    </div>
-    
-    <!-- Portal Page -->
-    <div id="portal-page" class="hidden">
-        <div class="flex h-screen bg-gray-100">
-            <!-- Sidebar -->
-            <aside id="sidebar" class="sidebar w-64 fixed top-0 right-0 h-full z-30 md:relative md:translate-x-0 transform translate-x-full">
-                <div class="p-4 border-b border-gray-700 text-center flex items-center justify-center gap-2">
-                    <img src="images/logoBlack.png" alt="شعار المؤسسة" class="w-25 h-14 rounded-full">
-                    <h2 class="text-xl font-bold text-white">واجهة البرنامج</h2>
-                </div>
-                <nav class="mt-4">
-                    <p class="px-4 text-xs text-gray-500 uppercase font-semibold">القائمة الرئيسية</p>
-                    <a href="#" class="nav-link flex items-center px-4 py-3 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white" data-page="home">
-                        <span class="text-xl icon-3d">🏠</span><span class="mx-3 font-medium">الرئيسية</span>
-                    </a>
-                    <a href="#" class="nav-link flex items-center px-4 py-3 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white" data-page="dashboard">
-                        <span class="text-xl icon-3d">🎛️</span><span class="mx-3 font-medium">لوحة التحكم</span>
-                    </a>
-                    
-                    <div>
-                        <button id="projects-dropdown-toggle" class="nav-parent-button w-full flex items-center justify-between px-4 py-3 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white">
-                            <span class="flex items-center">
-                                <span class="text-xl icon-3d">🏗️</span>
-                                <span class="mx-3 font-medium">ادارة المشاريع</span>
-                            </span>
-                            <svg id="projects-dropdown-arrow" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        <div id="projects-dropdown-menu" class="hidden pt-2 pr-4 space-y-1">
-                             <div>
-                                <button id="studies-dropdown-toggle" class="nav-parent-button w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md">
-                                    <span class="flex items-center">
-                                        <span class="text-lg icon-3d">📐</span>
-                                        <span class="mx-3 font-medium text-sm">الدراسات و التصاميم</span>
-                                    </span>
-                                    <svg id="studies-dropdown-arrow" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </button>
-                                <div id="studies-dropdown-menu" class="hidden pt-2 pr-6 space-y-1 submenu">
-                                    <a href="#" class="nav-link block px-3 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-md" data-page="projects-sub">المشاريع</a>
-                                    <a href="#" class="nav-link block px-3 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-md" data-page="tendering-sub">طرح المشاريع</a>
-                                    <a href="#" class="nav-link block px-3 py-2 text-sm text-gray-400 hover:bg-gray-700 hover:text-white rounded-md" data-page="departments-sub">الاقسام</a>
-                                </div>
-                             </div>
-                            <a href="#" class="nav-link flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md" data-page="engineering-supervision">
-                               <span class="text-lg icon-3d">🛠️</span><span class="mx-3 font-medium text-sm">الاشراف الهندسي</span>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <a href="#" class="nav-link flex items-center px-4 py-3 mt-2 text-gray-300 hover:bg-gray-700 hover:text-white" data-page="archive">
-                        <span class="text-xl icon-3d">🗄️</span><span class="mx-3 font-medium">مكتبة المستندات</span>
-                    </a>
-                </nav>
-            </aside>
-            
-            <!-- Main Content -->
-            <div class="flex-1 flex flex-col overflow-hidden">
-                <!-- Header -->
-                <header class="flex justify-between items-center p-4 bg-white border-b shadow-sm z-20">
-                    <div class="flex items-center">
-                         <button id="menu-toggle-button" class="md:hidden text-gray-600 focus:outline-none">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                        </button>
-                        <h1 class="text-xl font-semibold text-gray-800 mx-4" id="page-title">الرئيسية</h1>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <button class="relative text-gray-600 hover:text-gray-800">
-                            <span class="text-2xl icon-3d">🔔</span>
-                            <span class="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                        </button>
-                        <div class="avatar-3d w-10 h-10 rounded-full bg-[#B8860B] flex items-center justify-center font-bold text-white border-2 border-white">ع</div>
-                    </div>
-                </header>
+
+        <!-- Filters Card -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8 no-print">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-700">خيارات التصفية</h2>
+            <div id="filter-form" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 
-                <!-- Page Content -->
-                <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-8">
-                    <div id="home" class="page-content">
-                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                            <div class="xl:col-span-1 bg-white p-6 rounded-xl shadow-lg flex flex-col items-center text-center">
-                                <div class="w-24 h-24 rounded-full bg-yellow-100 flex items-center justify-center mb-4 border-4 border-white shadow-md">
-                                    <span class="text-5xl" style="color: var(--gold-accent);">👤</span>
-                                </div>
-                                <h3 id="home-user-name" class="font-bold text-xl portal-theme-text"></h3>
-                                <p id="home-user-role" class="text-sm text-gray-500"></p>
-                            </div>
-                            <a href="#" data-page="dashboard" class="nav-link-card bg-white p-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-4">
-                                <span class="text-4xl icon-3d">🎛️</span>
-                                <div>
-                                    <h3 class="font-bold text-xl portal-theme-text">لوحة التحكم</h3>
-                                    <p class="text-sm text-gray-500">عرض المؤشرات والرسوم البيانية</p>
-                                </div>
-                            </a>
-                             <a href="#" data-page="projects-sub" class="nav-link-card bg-white p-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-4">
-                                <span class="text-4xl icon-3d">🏗️</span>
-                                <div>
-                                    <h3 class="font-bold text-xl portal-theme-text">ادارة المشاريع</h3>
-                                    <p class="text-sm text-gray-500">تصفح وتصنيف المشاريع والمستندات</p>
-                                </div>
-                            </a>
-                             <a href="#" data-page="archive" class="nav-link-card bg-white p-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-4">
-                                <span class="text-4xl icon-3d">🗄️</span>
-                                <div>
-                                    <h3 class="font-bold text-xl portal-theme-text">مكتبة المستندات</h3>
-                                    <p class="text-sm text-gray-500">الأرشيف الدائم لجميع الملفات</p>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                    <div id="dashboard" class="page-content hidden">
-                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                            <div class="bg-white p-5 rounded-xl shadow-lg text-center"><p class="text-4xl font-bold" style="color: var(--olive-dark);" id="kpi-total">10</p><p class="text-gray-500 mt-1">إجمالي المشاريع</p></div>
-                            <div class="bg-white p-5 rounded-xl shadow-lg text-center"><p class="text-4xl font-bold" style="color: var(--gold-accent);" id="kpi-ongoing">3</p><p class="text-gray-500 mt-1">جاري طرحها</p></div>
-                            <div class="bg-white p-5 rounded-xl shadow-lg text-center"><p class="text-4xl font-bold text-gray-500" id="kpi-previous">4</p><p class="text-gray-500 mt-1">سابقة</p></div>
-                            <div class="bg-white p-5 rounded-xl shadow-lg text-center"><p class="text-4xl font-bold text-blue-600" id="kpi-completed">3</p><p class="text-gray-500 mt-1">مقترحة</p></div>
-                         </div>
-                         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                            <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow-lg"><h3 class="font-bold text-lg" style="color: var(--olive-dark);">توزيع المشاريع حسب المنطقة</h3><div class="chart-container"><canvas id="barChart"></canvas></div></div>
-                            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg"><h3 class="font-bold text-lg" style="color: var(--olive-dark);">تصنيف المشاريع حسب الحالة</h3><div class="chart-container"><canvas id="doughnutChart"></canvas></div></div>
-                         </div>
-                    </div>
-                    <div id="projects-sub" class="page-content hidden">
-                       <div id="project-summary-cards" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                           <!-- Summary cards will be injected here -->
-                       </div>
-                       <div id="filtered-project-view" class="hidden">
-                            <div class="flex justify-between items-center mb-6">
-                                <div class="flex items-center gap-4">
-                                    <h2 id="filtered-project-title" class="text-2xl font-bold" style="color: var(--olive-dark);"></h2>
-                                    <div class="relative">
-                                        <button id="add-document-button" class="bg-gray-800 text-white text-sm rounded-lg px-4 py-2 hover:bg-black transition-colors flex items-center gap-2"><span>+</span> إضافة</button>
-                                        <div id="add-document-dropdown" class="hidden absolute left-0 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                                            <div id="add-doc-step1" class="p-2">
-                                                <p class="text-sm font-semibold p-2">1. اختر نوع المشروع</p>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="1" data-value="انشاءات">انشاءات</a>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="1" data-value="ترميمات">الترميمات</a>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="1" data-value="توريدات">التوريدات</a>
-                                            </div>
-                                            <div id="add-doc-step2" class="p-2 hidden">
-                                                 <p class="text-sm font-semibold p-2">2. اختر المنطقة</p>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="2" data-value="الرياض">الرياض</a>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="2" data-value="مكة">مكة</a>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="2" data-value="المدينة">المدينة</a>
-                                            </div>
-                                             <div id="add-doc-step3" class="p-2 hidden">
-                                                 <p class="text-sm font-semibold p-2">3. اختر نوع الملف</p>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="3" data-value="karrasa">كراسة شروط</a>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="3" data-value="mokhatat">مخططات</a>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="3" data-value="jadwal">جدول كميات</a>
-                                                <a href="#" class="add-doc-choice block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md" data-step="3" data-value="wathiqa">وثائق الزامية</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button id="back-to-summary" class="bg-gray-800 text-white text-sm rounded-lg px-4 py-2 hover:bg-black transition-colors">→ الرجوع</button>
-                           </div>
-                           
-                           <div class="bg-white p-4 rounded-xl shadow-lg mb-6">
-                               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                   <div>
-                                       <label for="detail-region-filter" class="block text-sm font-medium text-gray-700">المنطقة</label>
-                                       <select id="detail-region-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm rounded-md">
-                                           <option value="all">كل المناطق</option>
-                                           <option>الرياض</option>
-                                           <option>مكة</option>
-                                           <option>المدينة</option>
-                                       </select>
-                                   </div>
-                                   <div>
-                                       <label for="detail-search" class="block text-sm font-medium text-gray-700">بحث</label>
-                                       <input type="text" id="detail-search" class="mt-1 focus:ring-yellow-500 focus:border-yellow-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="بحث في المستندات...">
-                                   </div>
-                               </div>
-                           </div>
+                <div>
+                    <label for="date-from" class="block text-sm font-medium text-gray-600 mb-1">من تاريخ</label>
+                    <input type="date" id="date-from" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
 
-                           <div id="project-tabs-container" class="mb-6 hidden">
-                               <div class="border-b border-gray-200">
-                                   <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-                                       <button class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-type="انشاءات">الانشاءات</button>
-                                       <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-type="ترميمات">الترميمات</button>
-                                       <button class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-type="توريدات">التوريدات</button>
-                                   </nav>
-                               </div>
-                           </div>
+                <div>
+                    <label for="date-to" class="block text-sm font-medium text-gray-600 mb-1">إلى تاريخ</label>
+                    <input type="date" id="date-to" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
 
-                           <div id="project-documents-container" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
-                               <!-- Document cards will be injected here -->
-                           </div>
-                       </div>
-                    </div>
-                    <div id="tendering-sub" class="page-content hidden">
-                        <div class="bg-white p-8 rounded-xl shadow-lg"><h2 class="text-2xl font-bold" style="color: var(--olive-dark);">قسم طرح المشاريع</h2><p class="mt-4 text-gray-600">محتوى قسم طرح المشاريع سيتم إضافته هنا.</p></div>
-                    </div>
-                     <div id="departments-sub" class="page-content hidden">
-                        <div class="bg-white p-8 rounded-xl shadow-lg"><h2 class="text-2xl font-bold" style="color: var(--olive-dark);">قسم الأقسام</h2><p class="mt-4 text-gray-600">محتوى قسم الأقسام سيتم إضافته هنا.</p></div>
-                    </div>
-                    <div id="engineering-supervision" class="page-content hidden">
-                        <div class="bg-white p-8 rounded-xl shadow-lg"><h2 class="text-2xl font-bold" style="color: var(--olive-dark);">قسم الاشراف الهندسي</h2><p class="mt-4 text-gray-600">محتوى قسم الاشراف الهندسي سيتم إضافته هنا.</p></div>
-                    </div>
-                    <div id="archive" class="page-content hidden">
-                        <div class="bg-white p-6 rounded-xl shadow-lg">
-                           <h2 class="text-2xl font-bold" style="color: var(--olive-dark);">مكتبة المستندات (الأرشيف)</h2>
-                           <p class="mt-2 text-gray-600">سجل دائم لجميع المستندات التي تم إدخالها في النظام.</p>
-                           <div class="mt-4 overflow-x-auto">
-                               <table class="min-w-full divide-y divide-gray-200">
-                                   <thead class="bg-gray-50">
-                                       <tr>
-                                           <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">اسم الملف</th>
-                                           <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المستخدم</th>
-                                           <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">تاريخ الإضافة</th>
-                                           <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إجراءات</th>
-                                       </tr>
-                                   </thead>
-                                   <tbody id="archive-table-body" class="bg-white divide-y divide-gray-200">
-                                       <!-- Archive rows will be injected here -->
-                                   </tbody>
-                               </table>
-                           </div>
-                        </div>
-                    </div>
-                </main>
+                <div>
+                    <label for="currency" class="block text-sm font-medium text-gray-600 mb-1">عملة التعامل</label>
+                    <select id="currency" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="all" selected>الكل</option>
+                        <option value="EGP">الجنيه المصري</option>
+                        <option value="USD">الدولار</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="type" class="block text-sm font-medium text-gray-600 mb-1">آلية التعامل</label>
+                    <select id="type" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="all">الكل</option>
+                        <option value="امر مباشر">امر مباشر</option>
+                        <option value="مبادرة">مبادرة</option>
+                        <option value="مزاد">مزاد</option>
+                    </select>
+                </div>
+
+                <div id="initiative-type-container" class="hidden">
+                    <label for="initiative-type" class="block text-sm font-medium text-gray-600 mb-1">نوع المبادرة</label>
+                    <select id="initiative-type" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="all">الكل</option>
+                        <option value="دولار">دولار</option>
+                        <option value="نخيل">نخيل</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="center" class="block text-sm font-medium text-gray-600 mb-1">المركز</label>
+                    <select id="center" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="all">الكل</option>
+                        <option value="باريس">باريس</option>
+                        <option value="بلاط">بلاط</option>
+                        <option value="الخارجة">الخارجة</option>
+                    </select>
+                </div>
+
+                <div class="col-span-full xl:col-span-1">
+                    <label for="person-name" class="block text-sm font-medium text-gray-600 mb-1">اسم الشركة / المستثمر</label>
+                    <input type="text" id="person-name" placeholder="اترك الحقل فارغاً لتقرير المركز" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="col-span-full flex items-end space-x-3 space-x-reverse">
+                    <button id="generate-report" class="w-full lg:w-auto bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition duration-300">
+                        إنشاء التقرير
+                    </button>
+                    <button id="download-pdf" class="w-full lg:w-auto bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition duration-300 hidden">
+                        تنزيل PDF
+                    </button>
+                     <button id="print-report" class="w-full lg:w-auto bg-gray-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-700 transition duration-300 hidden">
+                        طباعة
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="loading" class="text-center my-10 hidden">
+            <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-2 text-gray-600">جاري إنشاء التقرير...</p>
+        </div>
+
+        <div id="report-output-container" class="bg-white rounded-xl shadow-md">
+            <div id="report-output" class="p-6 md:p-8 report-container">
+                <div id="placeholder" class="text-center py-20">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">لم يتم إنشاء تقرير بعد</h3>
+                    <p class="mt-1 text-sm text-gray-500">الرجاء تحديد خيارات التصفية والضغط على "إنشاء التقرير".</p>
+                  </div>
             </div>
         </div>
     </div>
 
-    <!-- Modals -->
-    <div id="documentViewModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4 modal-backdrop">
-        <div id="document-view-content-container" class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col modal-content transform scale-95">
-             <div class="p-4 border-b flex justify-between items-center"><h3 id="document-view-title" class="text-xl font-bold portal-theme-text"></h3><button id="closeDocumentViewModal" class="text-gray-400 hover:text-gray-800 text-3xl leading-none">&times;</button></div>
-             <div class="p-6 flex-1 overflow-y-auto"></div>
-             <div class="p-4 bg-gray-50 border-t flex justify-end"><button id="downloadDocumentBtn" class="bg-gray-800 text-white text-sm rounded-lg px-4 py-2 hover:bg-black transition-colors">تحميل الملف</button></div>
-        </div>
-    </div>
-
-    <div id="addFileModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4 modal-backdrop">
-        <form id="addFileForm" class="bg-white rounded-2xl shadow-2xl w-full max-w-xl modal-content transform scale-95">
-             <div class="p-4 border-b"><h3 class="text-xl font-bold portal-theme-text">إضافة ملف جديد</h3></div>
-             <div class="p-6 space-y-4">
-                <div class="flex border-b"><button type="button" id="manual-input-btn" class="input-method-btn flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent">كتابة يدويا</button><button type="button" id="upload-input-btn" class="input-method-btn flex-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent">ارفاق ملف</button></div>
-                <div id="upload-input-view" class="hidden"><label for="attachFileInput" class="block text-sm font-medium text-gray-700">اختر ملف</label><input type="file" id="attachFileInput" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"/></div>
-                <div id="manual-input-view"><label for="addFileName" class="block text-sm font-medium text-gray-700">اسم الملف (مطلوب للكتابة اليدوية)</label><input type="text" id="addFileName" class="mt-1 focus:ring-yellow-500 focus:border-yellow-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"><label for="addFileContent" class="block text-sm font-medium text-gray-700 mt-4">المحتوى</label><textarea id="addFileContent" rows="8" class="mt-1 focus:ring-yellow-500 focus:border-yellow-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"></textarea></div>
-             </div>
-             <div class="p-4 bg-gray-50 border-t flex justify-end space-x-2 space-x-reverse"><button type="button" id="closeAddFileModal" class="bg-gray-200 text-gray-700 text-sm rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors">إلغاء</button><button type="submit" class="text-white text-sm rounded-lg px-4 py-2 transition-colors" style="background-color: var(--olive-dark);">إضافة</button></div>
-        </form>
-    </div>
-    
-    <div id="downloadFilterModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4 modal-backdrop">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl modal-content transform scale-95">
-             <div class="p-4 border-b"><h3 id="download-modal-title" class="text-xl font-bold portal-theme-text">تحميل ملفات</h3></div>
-             <div class="p-6 space-y-4">
-                <div id="filter-section-project-type"></div>
-                <div id="filter-section-region"></div>
-                <div id="filter-section-doc-type"></div>
-             </div>
-             <div class="p-4 bg-gray-50 border-t flex justify-end space-x-2 space-x-reverse">
-                <button type="button" id="closeDownloadModal" class="bg-gray-200 text-gray-700 text-sm rounded-lg px-4 py-2 hover:bg-gray-300">إلغاء</button>
-                <button type="button" id="executeDownload" class="text-white text-sm rounded-lg px-4 py-2" style="background-color: var(--olive-dark);">تحميل</button>
-             </div>
-        </div>
-    </div>
-
-
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const loginPage = document.getElementById('login-page');
-            const portalPage = document.getElementById('portal-page');
-            const loginForm = document.getElementById('login-form');
+        // --- Data from uploaded CSV files ---
+        const investorsCSV = `رقم الملف,يتبع مركز *,الشركة / فرد *,اسم الشركة,الكيان/الصفة القانونية,الجنسية  *,نشاط الشركة *,اسم المستثمر *,رقم القومي للمستثمر  *,اسم المفوض عنه بالتوقيع,رقم القومي للمفوض عنه ,عنوان المراسلة للمستثمر *,عنوان المراسلة للمفوض,عنوان المراسلة للشركة,رقم التليفون أساسي * ,رقم التليفون احتياطي,رقم تليفون الشركة,رقم الواتساب ,البريد الالكتروني الشخصي *,البريد الالكتروني للشركة,تاريخ التأسيس	*,رقم الترخيص *	,رقم السجل التجاري *,الجهة المصدرة للسجل التجاري	,تاريخ انتهاء السجل التجاري *,رقم البطاقة الضريبية * ,تاريخ انتهاء البطاقة الضريبية *,رقم الحساب البنكي الأساسي ,عدد الشركاء,مرفق عقد التأسيس,مرفق السجل التجاري ,مرفق البطاقة الضريبية  ,مرفق شهادة مزاولة   ,مرفق شهادة تأسيس الشركة ,مرفق قيد في السجل التجاري,مرفق خطاب تفويض,مرفق التوكيل الرسمي,مرفقات اخري
+1-5,باريس,شركة,العربيه للتنميه العمرانيه والاستثمار الزراعى,شركه توصيه بسيطه,مصرى,تنميه عمرانيه واستثمار عقارى,,,محمود جمال زكى حسن,29402012607776,,سوهاج,حاره السيده فاطمه  خلف التأمين الصحى شارع التحرير سوهاج,01114417308,,,,,,18-10-2020,,2462,مكتب سجل تجارى استثمار سوهاج,18-10-2035,602-099-927,31-10-2025,,3,,,,,,,,,
+2-5,باريس,شركة,العمده لاستصلاح وزراعه الاراضى,شركه توصيه بسيطه,مصرى,استصلاح وتجهيز الاراضى بالمرافق الاساسيه,,,احمد عبد النعيم سليم عبد النعيم,28506070102036,,الخارجه الوادى الجديد,قريه جده -مركز باريس -الوادى الجديد,01027505290,,,,,,14-10-2023,,574,مكتب سجل تجارى استثمار الوادى الجديد,7-10-2048,,,,2,,,,,,,,,
+3-5,باريس,شركة,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,شركه توصيه بسيطه,مصرى,استصلاح وتجهيز الاراضى بالمرافق الاساسيه,,,,,,,قريه عدن -مركز باريس -الوادى الجديد,01288350718,01128434422,,,,,25-5-2023,,492,مكتب سجل تجارى استثمار الوادى الجديد,27-5-2048,753-239-299,12-6-2028,,12,,,,,,,,,
+4-5,باريس,شركة,الفتح لاستصلاح الاراضى الصحراويه ,شركه توصيه بسيطه,مصرى,استصلاح وتجهيز الاراضى بالمرافق الاساسيه,,,,,,,قريه بغداد مركز باريس محافظه الوادى الجديد,01144173080,,,,,,10-8-2021,,9688,مكتب سجل تجارى استثمار اسيوط,9-8-2046,643-004-882,15-8-2026,,3,,,,,,,,,
+5-5,باريس,فرد ,,,مصرى,,بهجت رزق ابو زيد عبد الغفار,27601172603012,,,تونس -مركز سوهاج -سوهاج,,,,,,,,,,,,,,,,,,,,,,,,,,
+6-5,باريس,فرد ,,,مصرى,,محمد ماهر مخلوف محمود,29112162601735,,,شارع 50 طه سوهاج ثان سوهاج,,,01027505290,,,,,,,,,,,,,,,,,,,,,,,
+7-5,باريس,فرد ,,,مصرى,,محمود احمد عبد الرحيم على ,29709133200051,,,جده مركز باريس الوادى الجديد,,,,,,,,,,,,,,,,,,,,,,,,,,
+8-5,باريس,شركة,شركه جرين فالى لاستصلاح الاراضى ,شركه تضامن,مصرى,استصلاح وتجهيز الاراضى بالمرافق الاساسيه,,,,,,,العمايده -مركز المنشأه -سوهاج,,,,,,,25-6-2023,,3916,مكتب سجل تجارى اسثمار سوهاج,24-6-2048,,,,2,,,,,,,,,
+9-5,باريس,فرد ,,,مصرى,,أحمد جمال ادريس محمد,28601013200172,,,بغداد مركز باريس الوادى الجديد,,,01145467545,,,,,,,,,,,,,,,,,,,,,,,
+10-5,باريس,شركة,شركه الأشراف لاستصلاح واستزراع الاراضى ,ذات مسؤليه محدوده,مصرى,استصلاح وتجهيز الاراضى بالمرافق الاساسيه,,,,,,,الوادى الجديد -مركزباريس قريه القصر القبلى ,1027505290,,,,,,28-11-2023,,627,مكتب سجل تجارى استثمار الوادى الجديد,28-11-2048,846-454-886,,,2,,,,,,,,,
+11-5,باريس,شركة,شركه أفرو جرين باك للتنميه الزراعيه والحيوانيه,ذات مسؤليه محدوده,مصرى,استصلاح وتجهيز الاراضى بالمرافق الاساسيه,,,,,,,القاهره السيده زينب ب ش حسنى من شارع السيده زينب,01010103244,,,,,,17-3-2022,,183939,مكتب سجل تجارى استثمار القاهره,27-3-2047,682-158-828,28-3-2023,,3,,,,,,,,,
+`;
+        const transactionsCSV = `رقم الملف *,رقم امر الدفع  *,رقم الأرض  *,اسم المستثمر *,نوع المعاملة *,آلية  التعامل,تاريخ جلسة المزاد ,رقم المزايدة,رقم المباردة,تاريخ الاستلام,تاريخ الاستحقاق,تاريخ السداد *,مدة التأخير,نوع الأرض,موقع الأرض *,احداثيات الأرض,المساحة الأرض,النشاط الأرض,المبلغ *,المبلغ المحصل,المبلغ المستحق,مبلغ التاخيرات,ملاحظات,حالة الدفع *
+1-5,FJB2320053933952,,الشركه العربيه للتنميه العمرانيه والاستثمار الزراعى,رسوم رسم كروكى,امر مباشر-مبادره الدولار,,,,27-8-2023,27-08-2023,19-7-2023,,ارض زراعية,قريه عدن -مركز باريس,, 500 فدان,زراعي,2500,2500,,,,تم السداد
+1-5,FJB2320855005126,,الشركه العربيه للتنميه العمرانيه والاستثمار الزراعى, رسوم تبرع,امر مباشر-مبادره الدولار,,,,27-8-2023,27-08-2023,27-7-2023,,ارض زراعية,قريه عدن -مركز باريس,,500 فدان,زراعى,7500,7500,,,,تم السداد
+1-5,FJB2320053931320,,الشركه العربيه للتنميه العمرانيه والاستثمار الزراعى,تأمين,امر مباشر-مبادره الدولار,,,,27-8-2023,27-08-2023,19-7-2023,,ارض زراعيه,قريه عدن -مركز باريس,,500 فدان,زراعى,30700,30700,,,,تم السداد
+2-5,FJB2332575610281,,شركه العمده لاستصلاح وزراعه الاراضى ,رسوم رسم كروكى ,امر مباشر-مبادره الدولار,,,,17-12-2023,17-12-2023,21-11-2023,,ارض زراعية,قريه القصر القبلى -مركز باريس,,200 فدان,زراعى,1000,1000,,,,تم السداد
+2-5,FJB2334178712084,,شركه العمده لاستصلاح وزراعه الاراضى , رسوم تبرع,امر مباشر-مبادره الدولار,,,,17-12-2023,45119,45119,,ارض زراعية,قريه القصر القبلى -مركز باريس,,200 فدان,زراعى,5000,5000,,,,تم السداد
+2-5,FJB2332575608512,,شركه العمده لاستصلاح وزراعه الاراضى ,تأمين,امر مباشر-مبادره الدولار,,,,17-12-2023,17-12-2023,21-11-2023,,ارض زراعيه,قريه القصر القبلى -مركز باريس,,200 فدان,زراعى,20880,20880,,,,تم السداد
+3-5,JB2326420139041,,شركه البسيونى لاستصلاح الاراضى والتنميه الزراعيه,رسوم رسم كروكى,امر مباشر -مبادره الدولار ,,,,29-10-2023,29-10-2023,21-9-2023,,ارض زراعيه,قريه بغداد-مركز باريس,,200 فدان,زراعى,1000,1000,,,,تم السداد
+3-5,JB2326420138205,,شركه البسيونى لاستصلاح الاراضى والتنميه الزراعيه, رسوم تبرع,امر مباشر-مبادره الدولار,,,,29-10-2023,29-10-2023,21-9-2023,,ارض زراعيه,قريه بغداد-مركز باريس,,200 فدان,زراعي,5000,5000,,,,تم السداد
+3-5,JB2326420139145,,شركه البسيونى لاستصلاح الاراضى والتنميه الزراعيه,تأمين,امر مباشر -مبادره الدولار ,,,,29-10-2023,29-10-2023,21-9-2023,,ارض زراعيه,قريه بغداد-مركز باريس,,200 فدان,زراعي,15360,15360,,,,تم السداد
+4-5,FJB23118610481993,,شركه الفتح لاستصلاح الاراضى الصحراويه,رسوم رسم كروكى,امر مباشر-مبادره الدولار,,,,3-8-2023,03-08-2023,5-7-2023,,ارض زراعيه,قريه بغداد-مركز باريس,,200 فدان,زراعي,1000,1000,,,,تم السداد
+4-5,FJB2318610481470,,شركه الفتح لاستصلاح الاراضى الصحراويه,  رسوم تبرع,امر مباشر -مبادره الدولار ,,,,3-8-2023,03-08-2023,5-7-2023,,ارض زراعيه,قريه بغداد-مركز باريس,,200 فدان,زراعي,3000,3000,,,,تم السداد
+4-5,FJB23117710098742,,شركه الفتح لاستصلاح الاراضى الصحراويه,تأمين,امر مباشر-مبادره الدولار,,,,3-8-2023,03-08-2023,26-6-2023,,ارض زراعيه,قريه بغداد-مركز باريس,,200 فدان,زراعي,12280,12280,,,,تم السداد
+5-5,FJB2318710656319,,بهجت رزق ابو زيد عبد الغفار,رسوم رسم كروكى,امر مباشر-مبادره الدولار,,,,3-8-2023,03-08-2023,6-7-2023,,ارض زراعيه,قريه جدة-مركز باريس,,200 فدان,زراعي,1000,1000,,,,تم السداد
+5-5,FJB2318710665872,,بهجت رزق ابو زيد عبد الغفار,  رسوم تبرع,امر مباشر-مبادره الدولار,,,,3-8-2023,03-08-2023,6-7-2023,,ارض زراعيه,قريه جدة-مركز باريس,,200 فدان,زراعي,3000,3000,,,,تم السداد
+5-5,FJB2318710664098,,بهجت رزق ابو زيد عبد الغفار,تأمين,امر مباشر-مبادره الدولار,,,,3-8-2023,03-08-2023,6-7-2023,,ارض زراعيه,قريه جدة-مركز باريس,,200 فدان,زراعي,12280,12280,,,,تم السداد
+6-5,FJB2316548473491,,محمد ماهر محمود مخلوف,رسوم رسم كروكى,امر مباشر-مبادره الدولار,,,,3-8-2023,03-08-2023,14-6-2023,,ارض زراعيه,قريه جدة-مركز باريس,,200 فدان,زراعي,1000,1000,,,,تم السداد
+6-5,FJB2316548473447,,محمد ماهر محمود مخلوف,  رسوم تبرع,امر مباشر-مبادره الدولار,,,,3-8-2023,03-08-2023,14-6-2023,,ارض زراعيه,قريه جدة-مركز باريس,,200 فدان,زراعي,3000,3000,,,,تم السداد
+6-5,FJB2316548473450,,محمد ماهر محمود مخلوف,تأمين,امر مباشر-مبادره الدولار,,,,3-8-2023,03-08-2023,14-6-2023,,ارض زراعيه,قريه جدة-مركز باريس,,200 فدان,زراعي,12280,12280,,,,تم السداد
+7-5,FJB2329570011543,,محمود أحمد عبد الرحيم على ,رسوم رسم كروكى,امر مباشر -مبادره الدولار ,,,,29-10-2023,29-10-2023,22-10-2023,,ارض زراعيه,قريه جدة-مركز باريس,,200 فدان,زراعي,1000,1000,,,,تم السداد
+7-5,FJB23229570010655,,محمود أحمد عبد الرحيم على ,  رسوم تبرع,امر مباشر -مبادره الدولار ,,,,29-10-2023,29-10-2023,22-10-2023,,ارض زراعيه,قريه جدة-مركز باريس,,200 فدان,زراعي,5000,5000,,,,تم السداد
+7-5,FJB2329570009842,,محمود أحمد عبد الرحيم على ,تأمين,امر مباشر -مبادره الدولار ,,,,29-10-2023,29-10-2023,22-10-2023,,ارض زراعيه,قريه جدة-مركز باريس,,200 فدان,زراعي,15360,15360,,,,تم السداد
+8-5,FJB2319152174369,,شركه جرين فالى لاستصلاح الاراضى,رسوم رسم كروكى,امر مباشر -مبادره الدولار ,,,,8-2-2023,08-02-2023,10-7-2023,,ارض زراعيه,قريه عدن-مركز باريس,,250 فدان,زراعي,1250,1250,,,,تم السداد
+8-5,FJB2319152174376,,شركه جرين فالى لاستصلاح الاراضى,  رسوم تبرع,امر مباشر -مبادره الدولار ,,,,8-2-2023,08-02-2023,10-7-2023,,ارض زراعيه,قرية عدن-مركز باريس,,250 فدان,زراعي,3750,3750,,,,تم السداد
+8-5,FJB2319152174184,,شركه جرين فالى لاستصلاح الاراضى,تأمين,امر مباشر -مبادره الدولار ,,,,8-2-2023,08-02-2023,10-7-2023,,ارض زراعيه,قرية عدن-مركز باريس,,250 فدان,زراعي,15350,15350,,,,تم السداد
+9-5,FJB2323215965482,,أحمد جمال ادريس ,رسوم رسم كروكى,امر مباشر -مبادره الدولار ,,,,22-10-2023,22-10-2023,20-8-2023,,ارض زراعيه,قريه بغداد-مركز باريس,,100فدان,زراعي,500,500,,,,تم السداد
+9-5,FJB2323215965107,,أحمد جمال ادريس , رسوم تبرع,امر مباشر -مبادره الدولار ,,,,22-10-2023,22-10-2023,20-8-2023,,ارض زراعيه,قريه بغداد-مركز باريس,,100فدان,زراعي,2500,2500,,,,تم السداد
+9-5,FJB2319812055318,,احمد جمال ادريس,تأمين,امر مباشر -مبادره الدولار ,,,,22-10-2023,22-10-2023,17-7-2023,,ارض زراعيه,قريه بغداد-مركز باريس,,100فدان,زراعي,6140,6140,,,,تم السداد
+10-5,FJB2405091827554,,شركه الاشراف لاستصلاح وزراعه الاراضى ,رسوم رسم كروكى,امر مباشر -مبادره الدولار ,,,,27-2-2024,27-02-2024,19-2-2024,,ارض زراعيه,قرى درب الاربعين المرحله الاولى القريه الاولى-مركز بالريس,,200فدان,زراعي,1000,1000,,,,تم السداد
+10-5,FJB2405091827547,,شركه الاشراف لاستصلاح وزراعه الاراضى , رسوم تبرع,امر مباشر -مبادره الدولار ,,,,27-2-2024,27-02-2024,19-2-2024,,ارض زراعيه,قرى درب الاربعين المرحله الاولى القريه الاولى-مركز بالريس,,200فدان,زراعي,5000,5000,,,,تم السداد
+10-5,FJB2405091827555,,شركه الاشراف لاستصلاح وزراعه الاراضى ,تأمين,امر مباشر -مبادره الدولار ,,,,27-2-2024,27-02-2024,19-2-2024,,ارض زراعيه,قرى درب الاربعين المرحله الاولى القريه الاولى-مركز بالريس,,200فدان,زراعي,34000,34000,,,,تم السداد
+11-5,FJB2322958727551,,شركة افرو جرين باك للتنمية الزراعيه والحيوانيه,رسوم رسم كروكى,امر مباشر -مبادره الدولار ,,,,24-8-2023,24-08-2023,17-8-2023,,ارض زراعيه,طريق عين منصور-دوش المكس القبلى,,700,زراعي,3500,3500,,,,تم السداد
+11-5,FJB2322958727570,,شركة افرو جرين باك للتنمية الزراعيه والحيوانيه, رسوم تبرع,امر مباشر -مبادره الدولار ,,,,24-8-2023,24-08-2023,17-8-2023,,ارض زراعيه,طريق عين منصور-دوش المكس القبلى,,700,زراعي,17500,17500,,,,تم السداد
+11-5,FJB2322958727043,,شركة افرو جرين باك للتنمية الزراعيه والحيوانيه,تأمين ,امر مباشر -مبادره الدولار ,,,,24-8-2023,24-08-2023,17-8-2023,,ارض زراعيه,طريق عين منصور-دوش المكس القبلى,,700,زراعي,53760,53760,,,,تم السداد
+`;
+        const partnersCSV = `رقم الملف,اسماء الشركاء,الرقم القومى,اسم الشركة,الجنسية,صفته
+1-5,جلال السيد حسين محمد صغير ,25605276600591,العربيه للتنميه العمرانيه والاستثمار الزراعى,مصرى,متضامن
+1-5,عبد الكريم ابو الغيط السيد محمد,26105022601134,العربيه للتنميه العمرانيه والاستثمار الزراعى,مصرى,موصي
+1-5,محمد عبد الكريم خلف الله عبد الكريم,27611202603778,العربيه للتنميه العمرانيه والاستثمار الزراعى,مصرى,موصي
+2-5,عماد انور سعيد داود,27809172602156,العمده لاستصلاح وزراعه الاراضى,مصرى,متضامن
+2-5,توماس نزيه حزقيال سعيد,30105042600637,العمده لاستصلاح وزراعه الاراضى,مصرى,متضامن
+3-5,بسيونى أحمد جوده عبدالله,26611093200095,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,متضامن
+3-5,أحمد بسيونى أحمد جوده,29308153200096,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,متضامن
+3-5,محمد بسيونى احمد جوده,29506163200091,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+3-5,كارم احمد جوده عبدالله,26811243200152,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+3-5,مدحت ناصر محمد صديق ,28709073200096,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+3-5,محمد عبد الرحيم السيد محمود  ,28708183200079,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+3-5,الزعيم محمود حماد السيد,27602113200075,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+3-5,حسن عبد الرحيم السيد محمود,29806103200052,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+3-5,منصور كمال السيد محمود,29209023200053,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+3-5,سامح مصطفى احمد اسماعيل,29601182501771,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+3-5,عبد الجواد الهادى احمداحمد محمد,26802292601058,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+3-5,وحيد أحمد رمضان سليمان,29307013200073,البسيونى لاستصلاح الاراضى الزراعيه والتنميه العمرانيه,مصرى,موصي
+4-5,محمد عيد عواد سعيد,25710313200037,الفتح لاستصلاح الاراضى الصحراويه ,مصرى,متضامن
+4-5,معوض حماد أمير عبد العال,27812043200131,الفتح لاستصلاح الاراضى الصحراويه ,مصرى,موصي
+4-5, طلعت حماد أمير عبد العال,27402143200054,الفتح لاستصلاح الاراضى الصحراويه ,مصرى,موصي
+8-5,محمد صلاح محمد وهب الله,28909092603877,شركه جرين فالى لاستصلاح الاراضى ,مصرى,متضامن
+8-5,السيد محمد وهب الله محمود ,26904202601752,شركه جرين فالى لاستصلاح الاراضى ,مصرى,متضامن
+10-5,نايره قديس ابواليمين سليمان,27608142601249,شركه الأشراف لاستصلاح واستزراع الاراضى,مصرى,متضامن
+10-5,عماد انور سعيد داود,27809172602156,شركة الأشراف لاستصلاح واستزراع الاراضي,مصرى,متضامن
+11-5,أحمد فوزى عبد العظيم ابراهيم,28410012115759,شركه أفرو جرين باك للتنميه الزراعيه والحيوانيه,مصرى,متضامن
+11-5, فاديه جمال محمد ارسان,Q350501,شركة أفروجرين باك للتنميه الزراعية واستزراع الاراضي,مصرى,متضامن
+11-5,علاء شكيب ذيب ابو الهيجاء,O987035,شركة أفروجرين باك للتنميه الزراعية واستزراع الاراضي,مصرى,متضامن
+`;
+        const rentalValues = {
+            '1-5': { rentalValue: 100, annualRentalValue: 50000 },
+            '2-5': { rentalValue: 170, annualRentalValue: 34000 },
+            '3-5': { rentalValue: 125, annualRentalValue: 25000 },
+            '4-5': { rentalValue: 100, annualRentalValue: 20000 },
+            '5-5': { rentalValue: 100, annualRentalValue: 20000 },
+            '6-5': { rentalValue: 100, annualRentalValue: 20000 },
+            '7-5': { rentalValue: 125, annualRentalValue: 25000 },
+            '8-5': { rentalValue: 125, annualRentalValue: 25000 },
+            '9-5': { rentalValue: 100, annualRentalValue: 10000 },
+            '10-5': { rentalValue: 170, annualRentalValue: 34000 },
+            '11-5': { rentalValue: 125, annualRentalValue: 87000 },
+        };
 
-            if (loginForm) {
-                loginForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    if (document.getElementById('username').value.trim() && document.getElementById('password').value.trim()) {
-                        if(loginPage) loginPage.classList.add('hidden');
-                        if(portalPage) portalPage.classList.remove('hidden');
-                        initializePortal();
-                    } else {
-                        alert('الرجاء إدخال اسم المستخدم وكلمة المرور.');
-                    }
-                });
-            }
+        // --- DOM Elements ---
+        const generateBtn = document.getElementById('generate-report');
+        const downloadBtn = document.getElementById('download-pdf');
+        const printBtn = document.getElementById('print-report');
+        const reportOutput = document.getElementById('report-output');
+        const loadingSpinner = document.getElementById('loading');
+        const placeholder = document.getElementById('placeholder');
+        const typeSelect = document.getElementById('type');
+        const initiativeTypeContainer = document.getElementById('initiative-type-container');
+        
+        let processedData = [];
+        let activeCharts = [];
 
-            const userTypeBtns = document.querySelectorAll('.user-type-btn');
-            userTypeBtns.forEach(btn => btn.addEventListener('click', () => { userTypeBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); }));
-
-            function initializePortal() {
-                const currentUser = { name: 'مدير النظام', role: 'مسؤول أول', canDeleteFromArchive: true };
-                let projects = [
-                    { id: 1, name: 'تطوير الواجهة البحرية', type: 'انشاءات', region: 'مكة', status: 'المشاريع المقترحة', docs: [101, 102] },
-                    { id: 2, name: 'بناء مجمع سكني', type: 'انشاءات', region: 'الرياض', status: 'المشاريع السابقة', docs: [201, 202] },
-                    { id: 3, name: 'ترميم مبنى تاريخي', type: 'ترميمات', region: 'المدينة', status: 'المشاريع السابقة', docs: [301] },
-                    { id: 4, name: 'توريد أجهزة حاسب', type: 'توريدات', region: 'الرياض', status: 'المشاريع المقترحة', docs: [401] },
-                    { id: 5, name: 'إنشاء حديقة عامة', type: 'انشاءات', region: 'الرياض', status: 'المشاريع الجاري طرحها', docs: [501] },
-                    { id: 6, name: 'توريد أثاث مكتبي', type: 'توريدات', region: 'مكة', status: 'المشاريع الجاري طرحها', docs: [601] },
-                ];
-                let documentArchive = [
-                    {id: 101, type: 'karrasa', name:'كراسة شروط الواجهة.txt', fileType: 'text/plain', content: 'محتوى كراسة شروط الواجهة...', isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-01-15T10:00:00')},
-                    {id: 102, type: 'mokhatat', name:'مخطط الواجهة.pdf', fileType: 'application/pdf', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-01-16T11:30:00')},
-                    {id: 201, type: 'jadwal', name:'جدول كميات المجمع.xlsx', fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-02-20T14:00:00')},
-                    {id: 202, type: 'wathiqa', name:'وثيقة التزام المجمع.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-02-21T16:00:00')},
-                    {id: 301, type: 'mokhatat', name:'مخطط ترميم المبنى.pdf', fileType: 'application/pdf', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-03-10T09:00:00')},
-                    {id: 401, type: 'karrasa', name:'كراسة شروط التوريد.txt', fileType: 'text/plain', content: 'محتوى كراسة شروط الأجهزة...', isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-04-01T12:00:00')},
-                    {id: 501, type: 'karrasa', name:'كراسة شروط الحديقة.pdf', fileType: 'application/pdf', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-05-05T15:30:00')},
-                    {id: 601, type: 'karrasa', name:'كراسة شروط الأثاث.docx', fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', content: null, isReadOnly: true, addedBy: 'النظام', addedDate: new Date('2023-05-10T11:00:00')}
-                ];
-                
-                const navLinks = document.querySelectorAll('.nav-link');
-                const pages = document.querySelectorAll('.page-content');
-                const pageTitle = document.getElementById('page-title');
-                const sidebar = document.getElementById('sidebar');
-                const menuToggleButton = document.getElementById('menu-toggle-button');
-                
-                let currentProjectStatus = '', currentRegion = 'all', currentSearchTerm = '', currentProjectType = 'انشاءات';
-                let addDocSelection = {};
-                let currentInputMethod = 'manual';
-                
-                const documentViewModal = document.getElementById('documentViewModal');
-                const addFileModal = document.getElementById('addFileModal');
-                const downloadFilterModal = document.getElementById('downloadFilterModal');
-                let chartsInitialized = false;
-                
-                function showPage(pageId) {
-                    if(!pageId) return;
-                    pages.forEach(page => page.classList.add('hidden'));
-                    document.getElementById(pageId)?.classList.remove('hidden');
-                    document.querySelectorAll('.nav-parent-button, .nav-link').forEach(el => el.classList.remove('active'));
-                    const activeLink = Array.from(navLinks).find(link => link.dataset.page === pageId);
-                    if(activeLink){
-                        activeLink.classList.add('active');
-                        if (pageTitle) pageTitle.textContent = activeLink.textContent.trim();
-                        const parentStudies = activeLink.closest('#studies-dropdown-menu');
-                        const parentProjects = activeLink.closest('#projects-dropdown-menu');
-                        if (parentStudies) {
-                            document.getElementById('studies-dropdown-toggle')?.classList.add('active');
-                            document.getElementById('studies-dropdown-menu')?.classList.remove('hidden');
-                            document.getElementById('studies-dropdown-arrow')?.classList.add('rotate-180');
-                        }
-                        if (parentProjects || parentStudies) {
-                            document.getElementById('projects-dropdown-toggle')?.classList.add('active');
-                            document.getElementById('projects-dropdown-menu')?.classList.remove('hidden');
-                            document.getElementById('projects-dropdown-arrow')?.classList.add('rotate-180');
-                        }
-                    }
-                    if (window.innerWidth < 768 && sidebar) sidebar.classList.add('translate-x-full');
-                    if(pageId === 'projects-sub') renderSummaryCards();
-                    if(pageId === 'archive') renderArchive();
-                    if(pageId === 'dashboard' && !chartsInitialized) {
-                        renderCharts();
-                        chartsInitialized = true;
-                    }
-                }
-                
-                document.querySelectorAll('.nav-link-card').forEach(card => card.addEventListener('click', e => { e.preventDefault(); showPage(e.currentTarget.dataset.page); }));
-                document.querySelectorAll('.nav-link').forEach(link => link.addEventListener('click', e => { e.preventDefault(); showPage(e.target.closest('.nav-link').dataset.page); }));
-                menuToggleButton?.addEventListener('click', () => sidebar?.classList.toggle('translate-x-full'));
-                document.getElementById('projects-dropdown-toggle')?.addEventListener('click', () => { document.getElementById('projects-dropdown-menu')?.classList.toggle('hidden'); document.getElementById('projects-dropdown-arrow')?.classList.toggle('rotate-180'); });
-                document.getElementById('studies-dropdown-toggle')?.addEventListener('click', e => { e.stopPropagation(); document.getElementById('studies-dropdown-menu')?.classList.toggle('hidden'); document.getElementById('studies-dropdown-arrow')?.classList.toggle('rotate-180'); });
-
-                function renderSummaryCards() {
-                    const summaryContainer = document.getElementById('project-summary-cards');
-                    if(!summaryContainer) return;
-                    const statuses = {
-                        "المشاريع السابقة": { count: projects.filter(p => p.status === 'المشاريع السابقة').length, icon: '📜', bgColor: 'bg-gray-100' },
-                        "المشاريع الجاري طرحها": { count: projects.filter(p => p.status === 'المشاريع الجاري طرحها').length, icon: '⏳', bgColor: 'bg-amber-100' },
-                        "المشاريع المقترحة": { count: projects.filter(p => p.status === 'المشاريع المقترحة').length, icon: '💡', bgColor: 'bg-blue-100' }
-                    };
-                    summaryContainer.innerHTML = '';
-                    for (const [status, data] of Object.entries(statuses)) {
-                        summaryContainer.innerHTML += `<div class="summary-card bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow flex flex-col justify-between" data-status="${status}"><div><div class="w-16 h-16 rounded-full flex items-center justify-center ${data.bgColor} mb-4"><span class="text-3xl">${data.icon}</span></div><h3 class="font-bold text-xl portal-theme-text">${status}</h3><p class="text-4xl font-bold ${data.color || 'text-gray-700'} mt-2">${data.count} <span class="text-lg font-medium text-gray-500">مشروع</span></p></div><div class="mt-6 flex justify-between items-center"><span class="font-semibold text-blue-600 hover:text-blue-800 cursor-pointer summary-card-details">عرض التفاصيل →</span><button class="download-btn bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-300">تحميل</button></div></div>`;
-                    }
-                    document.querySelectorAll('.summary-card-details').forEach(card => card.addEventListener('click', (e) => handleSummaryCardClick(e.target.closest('.summary-card'))));
-                    document.querySelectorAll('.download-btn').forEach(card => card.addEventListener('click', (e) => { e.stopPropagation(); handleDownloadFilterClick(e.target.closest('.summary-card').dataset.status); }));
-                }
-
-                function handleSummaryCardClick(card) {
-                    currentProjectStatus = card.dataset.status;
-                    document.getElementById('project-summary-cards')?.classList.add('hidden');
-                    document.getElementById('filtered-project-view')?.classList.remove('hidden');
-                    document.getElementById('filtered-project-title').textContent = currentProjectStatus;
-                    document.getElementById('detail-region-filter').value = 'all';
-                    currentRegion = 'all';
-                    document.getElementById('project-tabs-container')?.classList.add('hidden');
-                    document.getElementById('project-documents-container')?.classList.add('hidden');
-                }
-
-                document.getElementById('back-to-summary')?.addEventListener('click', () => {
-                    document.getElementById('project-summary-cards')?.classList.remove('hidden');
-                    document.getElementById('filtered-project-view')?.classList.add('hidden');
-                });
-                
-                document.getElementById('detail-region-filter')?.addEventListener('change', e => {
-                    currentRegion = e.target.value;
-                    document.getElementById('project-tabs-container')?.classList.remove('hidden');
-                    renderDocumentCards();
-                });
-                
-                document.getElementById('detail-search')?.addEventListener('input', e => {
-                    currentSearchTerm = e.target.value.toLowerCase();
-                    if(currentRegion !== 'all') renderDocumentCards();
-                });
-
-                document.querySelectorAll('.tab-button').forEach(button => {
-                    button.addEventListener('click', () => {
-                        currentProjectType = button.dataset.type;
-                        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-                        button.classList.add('active');
-                        renderDocumentCards();
-                    });
-                });
-
-                function renderDocumentCards() {
-                    const container = document.getElementById('project-documents-container');
-                    if(!container) return;
-                    container.classList.remove('hidden');
-                    container.innerHTML = '';
-                    const docTypes = {karrasa: {t:'كراسات الشروط', i:'📄',d:[]}, mokhatat: {t:'المخططات', i:'🗺️',d:[]}, jadwal: {t:'جدول الكميات',i:'📋',d:[]}, wathiqa: {t:'وثائق الزامية',i:'📎',d:[]}};
-                    const projectDocIds = projects.filter(p=>p.status===currentProjectStatus && (currentRegion==='all' || p.region===currentRegion) && p.type===currentProjectType).flatMap(p => p.docs);
-                    documentArchive.filter(doc => projectDocIds.includes(doc.id) && doc.name.toLowerCase().includes(currentSearchTerm)).forEach(d=>docTypes[d.type]?.d.push(d));
-                    
-                    let found = false;
-                    for (const typeKey in docTypes) {
-                        const type = docTypes[typeKey];
-                        const list = type.d.map(d=>`<li class="flex justify-between items-center text-sm text-gray-600 group"><span class="truncate cursor-pointer hover:text-blue-600 view-doc" data-doc-id="${d.id}">${d.name}</span>`+(!d.isReadOnly?`<button class="delete-doc text-red-500 opacity-0 group-hover:opacity-100" data-doc-id="${d.id}">🗑️</button>`:'')+`</li>`).join('');
-                        if (list) {
-                            found = true;
-                            container.innerHTML += `<div class="bg-white p-4 rounded-xl shadow-lg"><h4 class="font-bold text-lg mb-3 portal-theme-text">${type.i} ${type.t}</h4><ul class="space-y-2">${list}</ul></div>`;
-                        }
-                    }
-                    if (!found && currentRegion!=='all') container.innerHTML = `<p class="text-gray-500 md:col-span-2 text-center">لا توجد مستندات.</p>`;
-                    document.querySelectorAll('.view-doc').forEach(b=>b.addEventListener('click',e=>handleDocumentClick(e.target.dataset.docId)));
-                    document.querySelectorAll('.delete-doc').forEach(b=>b.addEventListener('click',e=>deleteDocumentFromProject(e.target.dataset.docId)));
-                }
-                
-                function handleDocumentClick(docId) {
-                    const doc = documentArchive.find(d => d.id == docId);
-                    if (!doc || !documentViewModal) return;
-
-                    const viewerContainer = documentViewModal.querySelector('.p-6.flex-1.overflow-y-auto');
-                    documentViewModal.querySelector('#document-view-title').textContent = doc.name;
-                    document.getElementById('downloadDocumentBtn').onclick = () => downloadDocument(doc.name, doc.content, doc.fileType);
-
-                    viewerContainer.innerHTML = ''; 
-
-                    if (doc.fileType === 'application/pdf' && doc.content) {
-                        const iframe = document.createElement('iframe');
-                        iframe.src = doc.content;
-                        iframe.className = 'w-full h-full border-0';
-                        viewerContainer.appendChild(iframe);
-                    } else if (doc.fileType.startsWith('text/') && doc.content) {
-                        const pre = document.createElement('pre');
-                        pre.textContent = doc.content;
-                        pre.className = 'whitespace-pre-wrap text-gray-700';
-                        viewerContainer.appendChild(pre);
-                    } else {
-                         const message = document.createElement('div');
-                         message.className = 'text-center p-8';
-                         message.innerHTML = `<p class="text-lg font-semibold text-gray-700">لا يمكن عرض هذا النوع من الملفات.</p><p class="text-gray-500">يمكنك تحميل الملف لمعاينته على جهازك.</p>`;
-                         viewerContainer.appendChild(message);
-                    }
-                    documentViewModal.classList.remove('hidden');
-                }
-                
-                document.getElementById('closeDocumentViewModal')?.addEventListener('click', () => documentViewModal.classList.add('hidden'));
-
-                document.getElementById('add-document-button')?.addEventListener('click', (e) => {
-                     e.stopPropagation();
-                     const dropdown = document.getElementById('add-document-dropdown');
-                     dropdown.classList.toggle('hidden');
-                     dropdown.querySelector('#add-doc-step1').classList.remove('hidden');
-                     dropdown.querySelector('#add-doc-step2').classList.add('hidden');
-                     dropdown.querySelector('#add-doc-step3').classList.add('hidden');
-                });
-
-                document.querySelectorAll('.add-doc-choice').forEach(choice => {
-                    choice.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const step = parseInt(e.target.dataset.step);
-                        const value = e.target.dataset.value;
-                        addDocSelection[`step${step}`] = value;
-                        document.getElementById(`add-doc-step${step}`).classList.add('hidden');
-                        if (step < 3) {
-                            document.getElementById(`add-doc-step${step + 1}`).classList.remove('hidden');
-                        } else {
-                            document.getElementById('add-document-dropdown').classList.add('hidden');
-                            openAddFileModal();
-                        }
-                    });
-                });
-                
-                function openAddFileModal() {
-                    document.getElementById('addFileForm')?.reset();
-                    document.getElementById('manual-input-btn')?.click();
-                    document.getElementById('addFileModal')?.classList.remove('hidden');
-                }
-
-                document.getElementById('closeAddFileModal')?.addEventListener('click', () => document.getElementById('addFileModal').classList.add('hidden'));
-                
-                document.getElementById('manual-input-btn')?.addEventListener('click', () => {
-                    currentInputMethod = 'manual';
-                    document.getElementById('manual-input-view').classList.remove('hidden');
-                    document.getElementById('upload-input-view').classList.add('hidden');
-                    document.getElementById('addFileContent').required = true;
-                    document.getElementById('attachFileInput').required = false;
-                    document.getElementById('manual-input-btn').classList.add('active');
-                    document.getElementById('upload-input-btn').classList.remove('active');
-                });
-                
-                document.getElementById('upload-input-btn')?.addEventListener('click', () => {
-                    currentInputMethod = 'upload';
-                    document.getElementById('manual-input-view').classList.add('hidden');
-                    document.getElementById('upload-input-view').classList.remove('hidden');
-                    document.getElementById('addFileContent').required = false;
-                    document.getElementById('attachFileInput').required = true;
-                    document.getElementById('upload-input-btn').classList.add('active');
-                    document.getElementById('manual-input-btn').classList.remove('active');
-                });
-
-                document.getElementById('addFileForm')?.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    
-                    const handleFileAddition = (name, content, fileType) => {
-                        const { step1: type, step2: region, step3: docType } = addDocSelection;
-                        let project = projects.find(p => p.status === currentProjectStatus && p.type === type && p.region === region);
-                        if (!project) {
-                            project = { id: Date.now(), name: `مشروع ${type} جديد في ${region}`, type, region, status: currentProjectStatus, docs: [] };
-                            projects.push(project);
-                        }
-                        
-                        const newDocId = Date.now();
-                        project.docs.push(newDocId);
-                        documentArchive.push({ id: newDocId, type: docType, name: name, fileType: fileType, content: content, isReadOnly: false, addedBy: currentUser.name, addedDate: new Date() });
-                        renderDocumentCards();
-                        document.getElementById('addFileModal').classList.add('hidden');
-                    };
-
-                    if (currentInputMethod === 'manual') {
-                        const name = document.getElementById('addFileName').value;
-                        const content = document.getElementById('addFileContent').value;
-                        if(name && content) handleFileAddition(name + ".txt", content, 'text/plain'); else alert('الرجاء تعبئة كل الحقول');
-                    } else {
-                        const fileInput = document.getElementById('attachFileInput');
-                        const file = fileInput.files[0];
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (event) => handleFileAddition(file.name, event.target.result, file.type);
-                            if (file.type.startsWith('text/') || file.type === 'application/json') {
-                                reader.readAsText(file);
-                            } else {
-                                reader.readAsDataURL(file); 
-                            }
-                        } else alert('الرجاء اختيار ملف.');
-                    }
-                });
-
-                function deleteDocumentFromProject(docId) {
-                    projects.forEach(p => { p.docs = p.docs.filter(id => id != docId); });
-                    renderDocumentCards();
-                }
-                
-                function deleteDocumentFromArchive(docId) {
-                    if (!currentUser.canDeleteFromArchive) {
-                        alert('ليس لديك الصلاحية لحذف الملفات من الأرشيف.');
-                        return;
-                    }
-                    if (confirm('هل أنت متأكد من حذف هذا الملف نهائياً من النظام؟')) {
-                        documentArchive = documentArchive.filter(d => d.id != docId);
-                        deleteDocumentFromProject(docId); 
-                        renderArchive();
-                    }
-                }
-
-                function downloadDocument(filename, content) {
-                    const a = document.createElement('a');
-                    a.href = content && content.startsWith('data:') ? content : 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }
-
-                function renderArchive() { 
-                    const list = document.getElementById('archive-table-body');
-                    if(!list) return;
-                    list.innerHTML = '';
-                    documentArchive.forEach(doc => {
-                         const deleteButton = currentUser.canDeleteFromArchive ? `<button class="delete-from-archive text-red-500 hover:text-red-700" data-doc-id="${doc.id}">حذف</button>` : '';
-                         const row = `<tr>
-                                        <td class="px-6 py-4 whitespace-nowrap"><a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-800 view-doc" data-doc-id="${doc.id}">${doc.name}</a></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${doc.addedBy}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(doc.addedDate).toLocaleString('ar-EG')}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2 space-x-reverse">${deleteButton}</td>
-                                      </tr>`;
-                         list.innerHTML += row;
-                    });
-                    document.querySelectorAll('.view-doc').forEach(b => b.addEventListener('click', e => handleDocumentClick(e.target.dataset.docId)));
-                    document.querySelectorAll('.delete-from-archive').forEach(b => b.addEventListener('click', e => deleteDocumentFromArchive(e.target.dataset.docId)));
-                }
-                
-                let barChart, doughnutChart;
-                function renderCharts() {
-                    const kpiTotal = document.getElementById('kpi-total'), kpiOngoing = document.getElementById('kpi-ongoing'), kpiPrevious = document.getElementById('kpi-previous'), kpiCompleted = document.getElementById('kpi-completed');
-                    const barChartCanvas = document.getElementById('barChart'), doughnutChartCanvas = document.getElementById('doughnutChart');
-                    
-                    if(kpiTotal) kpiTotal.textContent = projects.length;
-                    if(kpiOngoing) kpiOngoing.textContent = projects.filter(p => p.status === 'المشاريع الجاري طرحها').length;
-                    if(kpiPrevious) kpiPrevious.textContent = projects.filter(p => p.status === 'المشاريع السابقة').length;
-                    if(kpiCompleted) kpiCompleted.textContent = projects.filter(p => p.status === 'المشاريع المقترحة').length;
-                    
-                    const chartFont = { family: 'Cairo', size: 12 }, oliveDark = '#556B2F', goldAccent = '#B8860B';
-                    if(barChartCanvas){
-                        const barCtx = barChartCanvas.getContext('2d');
-                        const gradient = barCtx.createLinearGradient(0, 0, 0, 300);
-                        gradient.addColorStop(0, 'rgba(85, 107, 47, 0.7)');
-                        gradient.addColorStop(1, 'rgba(85, 107, 47, 1)');
-                        const regionData = projects.reduce((acc, p) => ({ ...acc, [p.region]: (acc[p.region] || 0) + 1 }), {});
-                        if (barChart) barChart.destroy();
-                        barChart = new Chart(barCtx, { type: 'bar', data: { labels: Object.keys(regionData), datasets: [{ label: 'عدد المشاريع', data: Object.values(regionData), backgroundColor: gradient, borderColor: oliveDark, borderWidth: 1, borderRadius: 5, hoverBackgroundColor: goldAccent }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { rtl: true, bodyFont: chartFont, titleFont: chartFont } }, scales: { y: { beginAtZero: true, grid: { color: '#e5e7eb', drawBorder: false }, ticks: { font: chartFont, color: '#6b7280' } }, x: { grid: { display: false }, ticks: { font: chartFont, color: '#6b7280' } } } } });
-                    }
-                    if(doughnutChartCanvas){
-                        const statusData = projects.reduce((acc, p) => ({ ...acc, [p.status]: (acc[p.status] || 0) + 1 }), {});
-                        const statusColorsMap = { 'المشاريع السابقة': '#6c757d', 'المشاريع الجاري طرحها': goldAccent, 'المشاريع المقترحة': '#2563eb' };
-                        if (doughnutChart) doughnutChart.destroy();
-                        doughnutChart = new Chart(doughnutChartCanvas.getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(statusData), datasets: [{ data: Object.values(statusData), backgroundColor: Object.keys(statusData).map(status => statusColorsMap[status]), borderColor: '#f8f9fa', borderWidth: 5, hoverOffset: 10 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { font: chartFont, color: '#4b5563', padding: 15 } }, tooltip: { rtl: true, bodyFont: chartFont, titleFont: chartFont, padding: 10, backgroundColor: '#111827' } } } });
-                    }
-                }
-                
-                function handleDownloadFilterClick(status) {
-                    const modal = document.getElementById('downloadFilterModal');
-                    document.getElementById('download-modal-title').textContent = `تحميل ملفات: ${status}`;
-                    
-                    const createFilterGroup = (title, name, options) => {
-                        let optionsHTML = Object.entries(options).map(([value, label]) => `
-                            <label class="flex items-center space-x-2 space-x-reverse">
-                                <input type="checkbox" name="${name}" value="${value}" class="rounded text-yellow-600 focus:ring-yellow-500">
-                                <span>${label}</span>
-                            </label>`).join('');
-                        return `<div><h4 class="font-semibold text-gray-700 mb-2">${title}</h4><div class="grid grid-cols-2 md:grid-cols-4 gap-2">${optionsHTML}<label class="flex items-center space-x-2 space-x-reverse"><input type="checkbox" name="${name}-all" class="rounded"><span>الكل</span></label></div></div>`;
-                    };
-
-                    document.getElementById('filter-section-project-type').innerHTML = createFilterGroup('نوع المشروع', 'project-type-filter', {'انشاءات':'انشاءات', 'ترميمات':'ترميمات', 'توريدات':'التوريدات'});
-                    document.getElementById('filter-section-region').innerHTML = createFilterGroup('المنطقة', 'region-filter', {'الرياض':'الرياض', 'مكة':'مكة', 'المدينة':'المدينة'});
-                    document.getElementById('filter-section-doc-type').innerHTML = createFilterGroup('نوع الملف', 'doc-type-filter', {'karrasa':'كراسة شروط', 'mokhatat':'مخططات', 'jadwal':'جدول كميات', 'wathiqa':'وثائق الزامية'});
-
-                    modal.classList.remove('hidden');
-                    
-                    document.getElementById('executeDownload').onclick = () => {
-                        const getSelected = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
-                        const selectedProjectTypes = getSelected('project-type-filter');
-                        const selectedRegions = getSelected('region-filter');
-                        const selectedDocTypes = getSelected('doc-type-filter');
-
-                        const projectDocIds = projects.filter(p => p.status === status && (selectedProjectTypes.length === 0 || selectedProjectTypes.includes(p.type)) && (selectedRegions.length === 0 || selectedRegions.includes(p.region))).flatMap(p => p.docs);
-                        const filesToDownload = documentArchive.filter(doc => projectDocIds.includes(doc.id) && (selectedDocTypes.length === 0 || selectedDocTypes.includes(doc.type)));
-                        
-                        alert(`سيتم تحميل ${filesToDownload.length} ملف.\n` + filesToDownload.map(f => f.name).join('\n'));
-                        modal.classList.add('hidden');
-                    };
-
-                    document.querySelectorAll('input[name$="-all"]').forEach(allCheckbox => {
-                        const name = allCheckbox.name.replace('-all', '');
-                        allCheckbox.addEventListener('change', (e) => {
-                            document.querySelectorAll(`input[name="${name}"]`).forEach(cb => cb.checked = e.target.checked);
-                        });
-                    });
-                }
-                
-                document.getElementById('closeDownloadModal')?.addEventListener('click', () => document.getElementById('downloadFilterModal').classList.add('hidden'));
-
-                showPage('home');
-                document.getElementById('home-user-name').textContent = currentUser.name;
-                document.getElementById('home-user-role').textContent = currentUser.role;
+        // --- Event Listeners ---
+        typeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'مبادرة') {
+                initiativeTypeContainer.classList.remove('hidden');
+            } else {
+                initiativeTypeContainer.classList.add('hidden');
             }
         });
+
+        generateBtn.addEventListener('click', () => {
+            loadingSpinner.classList.remove('hidden');
+            reportOutput.innerHTML = '';
+            downloadBtn.classList.add('hidden');
+            printBtn.classList.add('hidden');
+            placeholder.classList.add('hidden');
+            
+            activeCharts.forEach(chart => chart.destroy());
+            activeCharts = [];
+
+            setTimeout(() => {
+                if (processedData.length === 0) {
+                    processedData = processAllData();
+                }
+                
+                const filteredData = filterData(processedData);
+                const centerFilter = document.getElementById('center').value;
+                const nameFilter = document.getElementById('person-name').value.trim();
+                
+                let reportHTML = '';
+                let reportType = 'default';
+                let centerNameForChart = '';
+
+                if (nameFilter) {
+                    reportType = 'investor';
+                    filteredData.forEach(item => { reportHTML += generateInvestorReportHTML(item); });
+                } else if (centerFilter !== 'all') {
+                    reportType = 'center';
+                    centerNameForChart = centerFilter;
+                    reportHTML = generateCenterReportHTML(filteredData, centerNameForChart);
+                } else {
+                    filteredData.forEach(item => { reportHTML += generateInvestorReportHTML(item); });
+                }
+                
+                if (filteredData.length === 0) {
+                    reportOutput.innerHTML = `<div class="text-center py-20"><h3 class="text-lg font-semibold">لا توجد نتائج</h3><p class="text-gray-500">لم يتم العثور على بيانات تطابق خيارات البحث.</p></div>`;
+                } else {
+                    reportOutput.innerHTML = reportHTML;
+                }
+
+                if (filteredData.length > 0) {
+                    if (reportType === 'investor') {
+                        filteredData.forEach(item => renderInvestorChart(item));
+                    } else if (reportType === 'center') {
+                        renderCenterChart(filteredData, centerNameForChart);
+                    } else {
+                        // For 'all' investors report, render individual charts
+                        filteredData.forEach(item => renderInvestorChart(item));
+                    }
+                }
+
+                loadingSpinner.classList.add('hidden');
+                if (filteredData.length > 0) {
+                    downloadBtn.classList.remove('hidden');
+                    printBtn.classList.remove('hidden');
+                }
+            }, 50);
+        });
+
+        downloadBtn.addEventListener('click', generatePDF);
+        printBtn.addEventListener('click', () => window.print());
+
+        // --- Data Processing Functions ---
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().replace(/\s*\*$/, '').trim());
+            return lines.slice(1).map(line => {
+                const values = line.split(',');
+                const entry = {};
+                headers.forEach((header, i) => {
+                    entry[header] = (values[i] || '').trim();
+                });
+                return entry;
+            });
+        }
+        
+        function parseDate(dateStr) {
+            if (!dateStr || dateStr.trim() === '') return null;
+            
+            if (!isNaN(dateStr) && dateStr.length > 2) {
+                const serial = parseInt(dateStr, 10);
+                return new Date((serial - 25569) * 86400 * 1000);
+            }
+
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                const day = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10);
+                const year = parseInt(parts[2], 10);
+                if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                    return new Date(year, month - 1, day);
+                }
+            }
+            
+            return null;
+        }
+
+        function processAllData() {
+            const investors = parseCSV(investorsCSV);
+            const transactions = parseCSV(transactionsCSV);
+            const partners = parseCSV(partnersCSV);
+            const investorsMap = new Map();
+
+            investors.forEach(inv => {
+                const fileId = inv['رقم الملف'];
+                if (fileId && !investorsMap.has(fileId)) {
+                    const rentalData = rentalValues[fileId] || { rentalValue: 0, annualRentalValue: 0 };
+                    investorsMap.set(fileId, { 
+                        ...inv, 
+                        ...rentalData,
+                        transactions: [], 
+                        partners: [], 
+                        lands: new Map(), 
+                        currency: 'EGP' 
+                    });
+                }
+            });
+
+            transactions.forEach(trans => {
+                const fileId = trans['رقم الملف'];
+                if (fileId && investorsMap.has(fileId)) {
+                    const investorData = investorsMap.get(fileId);
+                    investorData.transactions.push(trans);
+                    if (trans['آلية  التعامل']?.includes('الدولار')) {
+                        investorData.currency = 'USD';
+                    }
+                    const landId = trans['رقم الأرض'] || `${trans['موقع الأرض']}-${trans['المساحة الأرض']}`;
+                    if (!investorData.lands.has(landId)) {
+                        investorData.lands.set(landId, { location: trans['موقع الأرض'], area: trans['المساحة الأرض'], type: trans['نوع الأرض'], activity: trans['النشاط الأرض'] });
+                    }
+                }
+            });
+
+            partners.forEach(p => {
+                const fileId = p['رقم الملف'];
+                if (fileId && investorsMap.has(fileId)) {
+                    investorsMap.get(fileId).partners.push(p);
+                }
+            });
+            
+            investorsMap.forEach(investor => {
+                investor.lands = Array.from(investor.lands.values());
+                
+                // --- Calculate Annual Summary ---
+                const annualSummary = {};
+                investor.transactions.forEach(tr => {
+                    const dueDate = parseDate(tr['تاريخ الاستحقاق']);
+                    if (dueDate) { 
+                        const year = dueDate.getFullYear();
+                        if (!annualSummary[year]) {
+                            annualSummary[year] = { due: 0, paid: 0 };
+                        }
+                        annualSummary[year].due += parseFloat(tr['المبلغ']) || 0;
+                        annualSummary[year].paid += parseFloat(tr['المبلغ المحصل']) || 0;
+                    }
+                });
+
+                const firstReceiptDateStr = investor.transactions.length > 0 ? investor.transactions[0]['تاريخ الاستلام'] : null;
+                if (firstReceiptDateStr && investor.annualRentalValue > 0) {
+                    const receiptDate = parseDate(firstReceiptDateStr);
+                    if (receiptDate) {
+                        const firstRentalYear = receiptDate.getFullYear() + 2;
+                        const currentYear = new Date().getFullYear();
+
+                        for (let year = firstRentalYear; year <= currentYear; year++) {
+                            if (!annualSummary[year]) {
+                                annualSummary[year] = { due: 0, paid: 0 };
+                            }
+                            annualSummary[year].due += investor.annualRentalValue;
+                        }
+                    }
+                }
+                investor.annualSummary = annualSummary;
+                
+                // --- Calculate Status ---
+                const totalDue = Object.values(annualSummary).reduce((sum, yearData) => sum + yearData.due, 0);
+                const totalPaid = Object.values(annualSummary).reduce((sum, yearData) => sum + yearData.paid, 0);
+                const totalRemaining = totalDue - totalPaid;
+
+                if (totalRemaining <= 0) {
+                    investor.status = 'منتظم الدفع';
+                } else {
+                    const currentYear = new Date().getFullYear();
+                    let isOverdue = false;
+                    for (const year in annualSummary) {
+                        if (parseInt(year) < currentYear) {
+                            if (annualSummary[year].due > annualSummary[year].paid) {
+                                isOverdue = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isOverdue) {
+                        let pastDue = 0;
+                        let pastPaid = 0;
+                         for (const year in annualSummary) {
+                            if (parseInt(year) < currentYear) {
+                                pastDue += annualSummary[year].due;
+                                pastPaid += annualSummary[year].paid;
+                            }
+                        }
+                        if (pastPaid === 0 && pastDue > 0) {
+                            investor.status = 'متخلف كلياً';
+                        } else {
+                            investor.status = 'متأخر جزئياً';
+                        }
+                    } else {
+                        investor.status = 'منتظم الدفع';
+                    }
+                }
+            });
+
+            return Array.from(investorsMap.values());
+        }
+
+        function filterData(data) {
+            const dateFromStr = document.getElementById('date-from').value;
+            const dateToStr = document.getElementById('date-to').value;
+            const currencyFilter = document.getElementById('currency').value;
+            const type = document.getElementById('type').value;
+            const initiativeType = document.getElementById('initiative-type').value;
+            const center = document.getElementById('center').value;
+            const personNameInput = document.getElementById('person-name').value.toLowerCase().trim();
+
+            const fromDate = dateFromStr ? new Date(dateFromStr) : null;
+            const toDate = dateToStr ? new Date(dateToStr) : null;
+
+            return data.filter(item => {
+                const firstTransactionDate = item.transactions.length > 0 ? parseDate(item.transactions[0]['تاريخ الاستلام']) : null;
+
+                const dateMatch = (!fromDate || (firstTransactionDate && firstTransactionDate >= fromDate)) && (!toDate || (firstTransactionDate && firstTransactionDate <= toDate));
+                const centerMatch = center === 'all' || item['يتبع مركز'] === center;
+                const investorName = (item['اسم المستثمر'] || '').toLowerCase();
+                const companyName = (item['اسم الشركة'] || '').toLowerCase();
+                const nameMatch = !personNameInput || companyName.includes(personNameInput) || investorName.includes(personNameInput);
+                const currencyMatch = currencyFilter === 'all' || item.currency === currencyFilter;
+
+                const transactionMechanism = (item.transactions.length > 0 && item.transactions[0]['آلية  التعامل']) || '';
+                let typeMatch = true;
+                if (type !== 'all') {
+                    switch (type) {
+                        case 'امر مباشر':
+                            typeMatch = transactionMechanism.includes('امر مباشر') && !transactionMechanism.includes('مبادره');
+                            break;
+                        case 'مبادرة':
+                            typeMatch = transactionMechanism.includes('مبادره');
+                            if (typeMatch && initiativeType !== 'all') {
+                                if (initiativeType === 'دولار') {
+                                    typeMatch = transactionMechanism.includes('الدولار');
+                                } else if (initiativeType === 'نخيل') {
+                                    typeMatch = transactionMechanism.includes('نخيل');
+                                }
+                            }
+                            break;
+                        case 'مزاد':
+                            typeMatch = transactionMechanism.includes('مزاد');
+                            break;
+                        default:
+                            typeMatch = true;
+                    }
+                }
+
+                return dateMatch && centerMatch && nameMatch && typeMatch && currencyMatch;
+            });
+        }
+
+        // --- HTML & Chart Generation Functions ---
+
+        function generateInvestorReportHTML(item) {
+            const currencySymbol = item.currency === 'USD' ? '$' : 'ج.م';
+            const currencyName = item.currency === 'USD' ? 'دولار أمريكي' : 'جنيه مصري';
+            const displayName = item['اسم الشركة'] || item['اسم المستثمر'] || 'غير محدد';
+            
+            let landDetailsHTML = item.lands.map(land => `
+                <tr>
+                    <td>${land.location || '-'}</td>
+                    <td>${land.area || '-'}</td>
+                    <td>${land.type || '-'}</td>
+                    <td>${land.activity || '-'}</td>
+                    <td>${(item.rentalValue || 0).toLocaleString()} ${currencySymbol}</td>
+                    <td>${(item.annualRentalValue || 0).toLocaleString()} ${currencySymbol}</td>
+                    <td>${item.transactions[0]?.['تاريخ الاستلام'] || '-'}</td>
+                </tr>
+            `).join('');
+
+            let transactionsRows = item.transactions.map(tr => {
+                const due = parseFloat(tr['المبلغ']) || 0;
+                const paid = parseFloat(tr['المبلغ المحصل']) || 0;
+                const remaining = due - paid;
+                const percentage = due > 0 ? `${Math.round((paid / due) * 100)}%` : '100%';
+                return `
+                <tr class="border-b text-center">
+                    <td class="p-1 text-right">${tr['نوع المعاملة']}</td>
+                    <td class="p-1">${tr['رقم امر الدفع']}</td>
+                    <td class="p-1">${tr['تاريخ الاستحقاق']}</td>
+                    <td class="p-1">${tr['تاريخ السداد'] || '-'}</td>
+                    <td class="p-1">${due.toLocaleString()} ${currencySymbol}</td>
+                    <td class="p-1">${paid.toLocaleString()} ${currencySymbol}</td>
+                    <td class="p-1">${remaining.toLocaleString()} ${currencySymbol}</td>
+                    <td class="p-1">${tr['حالة الدفع']}</td>
+                    <td class="p-1">${percentage}</td>
+                </tr>
+            `}).join('');
+            
+            const annualSummary = item.annualSummary || {};
+            let annualSummaryRows = Object.keys(annualSummary).sort().map(year => {
+                const yearData = annualSummary[year];
+                const remaining = yearData.due - yearData.paid;
+                return `
+                    <tr>
+                        <td class="p-1 text-center">${year}</td>
+                        <td class="p-1 text-center">${yearData.due.toLocaleString()} ${currencySymbol}</td>
+                        <td class="p-1 text-center">${yearData.paid.toLocaleString()} ${currencySymbol}</td>
+                        <td class="p-1 text-center">${remaining.toLocaleString()} ${currencySymbol}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div class="report-background p-4 mb-6 border-2 border-gray-500 rounded-lg break-inside-avoid bg-white">
+                    <header class="flex justify-between items-center pb-2">
+                        <img src="images/1.png" alt="لوجو الصندوق" class="h-20">
+                        <div class="text-center">
+                            <h2 class="text-xl font-bold">الموقف المالي للمستثمر: ${displayName}</h2>
+                            <p class="text-md">${item['يتبع مركز']} - محافظة الوادي الجديد</p>
+                            <p class="text-sm text-gray-600">صندوق استصلاح الأراضي</p>
+                        </div>
+                        <img src="images/المحافظة.png" alt="Fund Logo" class="h-20">
+                    </header>
+
+                    <main class="mt-4">
+                        <h3 class="font-bold text-md mb-2">أولاً: البيانات الأساسية للمستثمر</h3>
+                        <table class="w-full text-sm report-table">
+                            <tr>
+                                <td class="font-bold bg-gray-50 w-1/4">رقم الملف</td><td class="w-1/4">${item['رقم الملف'] || '-'}</td>
+                                <td class="font-bold bg-gray-50 w-1/4">اسم الشركة</td><td class="w-1/4">${item['اسم الشركة'] || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold bg-gray-50">الكيان القانوني</td><td>${item['الكيان/الصفة القانونية'] || '-'}</td>
+                                <td class="font-bold bg-gray-50">النشاط الرئيسي</td><td>${item['نشاط الشركة'] || '-'}</td>
+                            </tr>
+                             <tr>
+                                <td class="font-bold bg-gray-50">المفوض بالتوقيع</td><td>${item['اسم المفوض عنه بالتوقيع'] || '-'}</td>
+                                <td class="font-bold bg-gray-50">الرقم القومي للمفوض</td><td>${item['رقم القومي للمفوض عنه'] || '-'}</td>
+                            </tr>
+                             <tr>
+                                <td class="font-bold bg-gray-50">الجنسية</td><td>${item['الجنسية'] || '-'}</td>
+                                <td class="font-bold bg-gray-50">عدد الشركاء</td><td>${item.partners.length > 0 ? item.partners.length : (item['الشركة / فرد'] === 'فرد' ? 'لا يوجد' : 'غير محدد')}</td>
+                            </tr>
+                             <tr>
+                                <td class="font-bold bg-gray-50">عملة التعامل</td><td>${currencyName}</td>
+                                <td class="font-bold bg-gray-50">تاريخ التأسيس</td><td>${item['تاريخ التأسيس'] || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold bg-gray-50">عنوان المراسلة</td><td colspan="3">${item['عنوان المراسلة للشركة'] || '-'}</td>
+                            </tr>
+                             <tr>
+                                <td class="font-bold bg-gray-50">رقم التليفون</td><td colspan="3">${item['رقم التليفون أساسي'] || '-'}</td>
+                            </tr>
+                        </table>
+                    </main>
+
+                    <div class="mt-4">
+                        <h3 class="font-bold text-md mb-2">ثانياً: تفاصيل الأراضي المستثمرة</h3>
+                        <table class="w-full text-sm report-table">
+                            <thead>
+                                <tr class="bg-gray-100 text-center">
+                                    <th>الموقع الجغرافي</th>
+                                    <th>المساحة</th>
+                                    <th>نوع الأرض</th>
+                                    <th>النشاط</th>
+                                    <th>القيمة الايجارية</th>
+                                    <th>القيمة الايجارية السنوية</th>
+                                    <th>تاريخ الاستلام</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${landDetailsHTML || '<tr><td colspan="7" class="text-center">لا توجد أراضي مسجلة</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h3 class="font-bold text-md mb-2">ثالثاً: الموقف المالي التفصيلي (${currencySymbol})</h3>
+                        <table class="w-full text-xs text-right border-collapse report-table">
+                            <thead><tr class="bg-gray-100 text-center"><th class="text-right">نوع المعاملة</th><th>رقم الإيصال</th><th>تاريخ الاستحقاق</th><th>تاريخ السداد</th><th>المستحق</th><th>المحصل</th><th>المتبقي</th><th>الحالة</th><th>نسبة التحصيل</th></tr></thead>
+                            <tbody>${transactionsRows}</tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-6">
+                        <h3 class="font-bold text-md mb-2 text-center">رابعاً: تحليل الموقف المالي</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="border rounded-lg p-3 chart-container-background" style="height: 280px;">
+                                <canvas id="investorChart-${item['رقم الملف']}"></canvas>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-md mb-2">الملخص السنوي (${currencySymbol})</h4>
+                                <table class="w-full text-sm report-table">
+                                    <thead>
+                                        <tr class="bg-gray-100 text-center">
+                                            <th>السنة</th>
+                                            <th>إجمالي المستحق</th>
+                                            <th>إجمالي المحصل</th>
+                                            <th>المتبقي</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${annualSummaryRows || '<tr><td colspan="4" class="text-center">لا توجد بيانات مالية</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <footer class="text-center mt-4 pt-2 border-t text-xs text-gray-500">
+                        <p>العنوان: مبنى صندوق استصلاح الأراضي العاصمة الإدارية بجوار مطار الخارجة | البريد الإلكتروني: info@greennewvalley.gov | الموقع الإلكتروني: greennewvalley.gov</p>
+                    </footer>
+                </div>`;
+        }
+
+        function generateCenterReportHTML(items, centerName) {
+            const reportDate = new Date().toLocaleDateString('ar-EG-u-nu-arab', { year: 'numeric', month: 'long', day: 'numeric' });
+            const totalInvestors = items.length;
+            const totalArea = items.reduce((sum, item) => sum + (parseFloat(item.lands[0]?.area.replace('فدان', '')) || 0), 0);
+            
+            const totalAnnualRentalValueUSD = items.reduce((sum, item) => {
+                return item.currency === 'USD' ? sum + (item.annualRentalValue || 0) : sum;
+            }, 0);
+
+            const statusCounts = items.reduce((counts, item) => ({ ...counts, [item.status]: (counts[item.status] || 0) + 1 }), {});
+            
+            const revenueByCurrency = items.reduce((acc, item) => {
+                const currency = item.currency || 'EGP';
+                if (!acc[currency]) {
+                    acc[currency] = {};
+                }
+                
+                item.transactions.forEach(tr => {
+                    const type = tr['نوع المعاملة'];
+                    if (!acc[currency][type]) {
+                        acc[currency][type] = { due: 0, paid: 0 };
+                    }
+                    acc[currency][type].due += parseFloat(tr['المبلغ']) || 0;
+                    acc[currency][type].paid += parseFloat(tr['المبلغ المحصل']) || 0;
+                });
+
+                if (item.annualRentalValue > 0) {
+                    const rentType = 'إيجار سنوي';
+                    if (!acc[currency][rentType]) {
+                        acc[currency][rentType] = { due: 0, paid: 0 }; 
+                    }
+                    acc[currency][rentType].due += item.annualRentalValue;
+                }
+
+                return acc;
+            }, {});
+
+            let revenueHTML = Object.keys(revenueByCurrency).sort().map(currency => {
+                const currencySymbol = currency === 'USD' ? '$' : 'ج.م';
+                const revenue = revenueByCurrency[currency];
+                let revenueRows = Object.keys(revenue).map(type => {
+                    const { due, paid } = revenue[type];
+                    const remaining = due - paid;
+                    const percentage = due > 0 ? `${Math.round((paid / due) * 100)}%` : '100%';
+                    return `<tr class="border-b text-center"><td class="p-1 font-semibold text-right">${type}</td><td class="p-1">${due.toLocaleString()} ${currencySymbol}</td><td class="p-1">${paid.toLocaleString()} ${currencySymbol}</td><td class="p-1">${remaining.toLocaleString()} ${currencySymbol}</td><td class="p-1">${percentage}</td></tr>`;
+                }).join('');
+
+                return `
+                    <div class="mt-4">
+                        <h4 class="font-semibold text-md mb-2">الإيرادات بعملة (${currencySymbol})</h4>
+                        <table class="w-full text-xs text-right border-collapse report-table">
+                            <thead><tr class="bg-gray-100 text-center"><th class="text-right">البند</th><th>مستحق</th><th>محصل</th><th>متبقي</th><th>نسبة التحصيل</th></tr></thead>
+                            <tbody>${revenueRows}</tbody>
+                        </table>
+                    </div>
+                `;
+            }).join('');
+
+
+            return `
+                <div class="report-background p-4 border-2 border-gray-500 rounded-lg bg-white">
+                    <header class="flex justify-between items-center pb-2 border-b-2 border-gray-500">
+                        <img src="images/1.png" alt="Fund Logo" class="h-20"> 
+                        <div class="text-center">
+                            <h2 class="text-2xl font-bold">بيان المركز المالي - مركز ${centerName}</h2>
+                            <p class="text-md">عن الفترة من ${document.getElementById('date-from').value || 'البداية'} إلى ${document.getElementById('date-to').value || reportDate}</p>
+                        </div>
+                        <img src="images/المحافظة.png" alt="Fund Logo" class="h-20">
+                    </header>
+                    <main class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm mt-4">
+                        <div class="border p-3 rounded-lg space-y-2">
+                            <div class="flex justify-between"><span class="font-semibold">الجهة التابعة:</span><span>صندوق استصلاح الأراضي</span></div>
+                            <div class="flex justify-between"><span class="font-semibold">عدد المستثمرين الكلي:</span><span>${totalInvestors} مستثمر</span></div>
+                            <div class="flex justify-between"><span class="font-semibold">إجمالي المساحة المخصصة:</span><span>${totalArea.toLocaleString()} فدان</span></div>
+                            <div class="flex justify-between"><span class="font-semibold">إجمالي القيمة الإيجارية السنوية (دولار):</span><span>$${totalAnnualRentalValueUSD.toLocaleString()}</span></div>
+                        </div>
+                        <div class="border p-3 rounded-lg"><h3 class="font-bold text-center mb-2">ملخص حالة السداد للمستثمرين</h3><div class="flex justify-between"><span class="font-semibold">منتظم السداد:</span><span>${statusCounts['منتظم الدفع'] || 0} (${totalInvestors > 0 ? Math.round(((statusCounts['منتظم الدفع'] || 0) / totalInvestors) * 100) : 0}%)</span></div><div class="flex justify-between"><span class="font-semibold">متأخر جزئياً:</span><span>${statusCounts['متأخر جزئياً'] || 0} (${totalInvestors > 0 ? Math.round(((statusCounts['متأخر جزئياً'] || 0) / totalInvestors) * 100) : 0}%)</span></div><div class="flex justify-between"><span class="font-semibold">متخلف كلياً:</span><span>${statusCounts['متخلف كلياً'] || 0} (${totalInvestors > 0 ? Math.round(((statusCounts['متخلف كلياً'] || 0) / totalInvestors) * 100) : 0}%)</span></div></div>
+                    </main>
+                    <div class="mt-4">
+                        <h3 class="font-bold text-lg mb-2">ملخص الإيرادات والمتحصلات</h3>
+                        ${revenueHTML}
+                        <div class="border rounded-lg p-3 chart-container-background mt-4" style="height: 350px;">
+                            <canvas id="centerChart-${centerName}"></canvas>
+                        </div>
+                    </div>
+                    <footer class="text-center mt-4 pt-2 border-t text-xs text-gray-500"><p>العنوان: مبنى صندوق استصلاح الأراضي العاصمة الإدارية بجوار مطار الخارجة | البريد الإلكتروني: info@greennewvalley.gov | الموقع الإلكتروني: greennewvalley.gov</p></footer>
+                </div>`;
+        }
+
+        function renderInvestorChart(item) {
+            const currencySymbol = item.currency === 'USD' ? '$' : 'ج.م';
+            const canvasId = `investorChart-${item['رقم الملف']}`;
+            const ctx = document.getElementById(canvasId)?.getContext('2d');
+            
+            if (!ctx) {
+                console.error(`Canvas element with id "${canvasId}" not found.`);
+                return;
+            }
+
+            const annualSummary = item.annualSummary || {};
+            const sortedYears = Object.keys(annualSummary).sort();
+
+            if (sortedYears.length === 0) {
+                ctx.font = "16px Amiri";
+                ctx.fillStyle = "#6b7280";
+                ctx.textAlign = "center";
+                ctx.fillText("لا توجد بيانات مالية لعرضها في الرسم البياني", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
+            const labels = sortedYears;
+            const dueData = sortedYears.map(year => annualSummary[year].due);
+            const paidData = sortedYears.map(year => annualSummary[year].paid);
+            const remainingData = sortedYears.map(year => {
+                const remaining = annualSummary[year].due - annualSummary[year].paid;
+                return remaining > 0 ? remaining : 0;
+            });
+
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'إجمالي المستحق',
+                            data: dueData,
+                            backgroundColor: 'rgba(239, 68, 68, 0.6)', // red-500
+                        },
+                        {
+                            label: 'إجمالي المحصل',
+                            data: paidData,
+                            backgroundColor: 'rgba(34, 197, 94, 0.6)', // green-500
+                        },
+                        {
+                            label: 'المتبقي',
+                            data: remainingData,
+                            backgroundColor: 'rgba(249, 115, 22, 0.6)', // orange-500
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { family: 'Amiri', size: 12 },
+                                color: '#1e3a8a'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `تحليل الموقف المالي السنوي`,
+                            font: { size: 16, family: 'Amiri', weight: 'bold' },
+                            color: '#1e3a8a'
+                        },
+                        tooltip: {
+                            bodyFont: { family: 'Amiri' },
+                            titleFont: { family: 'Amiri' },
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toLocaleString('ar-EG') + ` ${currencySymbol}`;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { font: { family: 'Amiri', size: 12 }, color: '#1e3a8a' },
+                            grid: { display: false }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { font: { family: 'Amiri', size: 12 }, color: '#1e3a8a' },
+                            grid: { color: 'rgba(191, 219, 254, 0.5)' }
+                        }
+                    }
+                }
+            });
+            activeCharts.push(chart);
+        }
+
+
+        function renderCenterChart(items, centerName) {
+            const canvasId = `centerChart-${centerName}`;
+            const ctx = document.getElementById(canvasId)?.getContext('2d');
+
+            if (!ctx) {
+                console.error(`Canvas element with id "${canvasId}" not found.`);
+                return;
+            }
+
+            const transactionLabels = [...new Set(items.flatMap(item => item.transactions.map(t => t['نوع المعاملة'])))];
+            const hasRent = items.some(item => item.annualRentalValue > 0);
+            const labels = [...transactionLabels];
+            if (hasRent && !labels.includes('إيجار سنوي')) {
+                labels.push('إيجار سنوي');
+            }
+
+            const egpDue = new Array(labels.length).fill(0);
+            const egpPaid = new Array(labels.length).fill(0);
+            const usdDue = new Array(labels.length).fill(0);
+            const usdPaid = new Array(labels.length).fill(0);
+
+            items.forEach(item => {
+                // Process transactions
+                item.transactions.forEach(tr => {
+                    const labelIndex = labels.indexOf(tr['نوع المعاملة']);
+                    if (labelIndex === -1) return;
+
+                    const due = parseFloat(tr['المبلغ']) || 0;
+                    const paid = parseFloat(tr['المبلغ المحصل']) || 0;
+
+                    if (item.currency === 'USD') {
+                        usdDue[labelIndex] += due;
+                        usdPaid[labelIndex] += paid;
+                    } else { 
+                        egpDue[labelIndex] += due;
+                        egpPaid[labelIndex] += paid;
+                    }
+                });
+
+                // Process rent
+                if (item.annualRentalValue > 0) {
+                    const rentLabelIndex = labels.indexOf('إيجار سنوي');
+                    if (rentLabelIndex !== -1) {
+                        if (item.currency === 'USD') {
+                            usdDue[rentLabelIndex] += item.annualRentalValue;
+                        } else {
+                            egpDue[rentLabelIndex] += item.annualRentalValue;
+                        }
+                    }
+                }
+            });
+
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'المستحق (ج.م)',
+                            data: egpDue,
+                            backgroundColor: 'rgba(219, 39, 119, 0.6)',
+                            borderColor: 'rgba(219, 39, 119, 1)',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'المحصل (ج.م)',
+                            data: egpPaid,
+                            backgroundColor: 'rgba(244, 114, 182, 0.6)',
+                            borderColor: 'rgba(244, 114, 182, 1)',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'المستحق ($)',
+                            data: usdDue,
+                            backgroundColor: 'rgba(22, 163, 74, 0.6)',
+                            borderColor: 'rgba(22, 163, 74, 1)',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'المحصل ($)',
+                            data: usdPaid,
+                            backgroundColor: 'rgba(74, 222, 128, 0.6)',
+                            borderColor: 'rgba(74, 222, 128, 1)',
+                            borderWidth: 1,
+                        }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            position: 'top',
+                            labels: {
+                                font: { family: 'Amiri', size: 12 },
+                                color: '#1e3a8a'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: `تحليل الإيرادات حسب البند والعملة`,
+                            font: { size: 16, family: 'Amiri', weight: 'bold' },
+                            color: '#1e3a8a'
+                        },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toLocaleString('ar-EG');
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { font: { family: 'Amiri', size: 12 }, color: '#1e3a8a' },
+                            grid: { display: false }
+                        },
+                        y: { 
+                            beginAtZero: true,
+                            ticks: { font: { family: 'Amiri', size: 12 }, color: '#1e3a8a' },
+                            grid: { color: 'rgba(191, 219, 254, 0.5)' }
+                        }
+                    }
+                }
+            });
+            activeCharts.push(chart);
+        }
+        
+        async function generatePDF() {
+            const reportElement = document.getElementById('report-output');
+            const nameFilter = document.getElementById('person-name').value.trim();
+            const orientation = nameFilter ? 'p' : 'l';
+
+            loadingSpinner.classList.remove('hidden');
+            downloadBtn.classList.add('hidden');
+            printBtn.classList.add('hidden');
+
+            try {
+                const canvas = await html2canvas(reportElement, { 
+                    scale: 2, 
+                    useCORS: true, 
+                    windowWidth: reportElement.scrollWidth, 
+                    windowHeight: reportElement.scrollHeight,
+                    backgroundColor: '#ffffff'
+                });
+                const imgData = canvas.toDataURL('image/png');
+                
+                window.jsPDF = window.jspdf.jsPDF;
+                const doc = new jsPDF({ orientation: orientation, unit: 'mm', format: 'a4' });
+                
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const pdfHeight = doc.internal.pageSize.getHeight();
+                const imgProps = doc.getImageProperties(imgData);
+                const imgRatio = imgProps.width / imgProps.height;
+                let finalImgHeight = pdfWidth / imgRatio;
+
+                doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalImgHeight);
+                doc.save('report.pdf');
+            } catch (error) {
+                console.error("Error generating PDF:", error);
+                alert("حدث خطأ أثناء إنشاء ملف PDF. الرجاء المحاولة مرة أخرى.");
+            } finally {
+                loadingSpinner.classList.add('hidden');
+                downloadBtn.classList.remove('hidden');
+                printBtn.classList.remove('hidden');
+            }
+        }
     </script>
 </body>
 </html>
